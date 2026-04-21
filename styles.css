@@ -595,9 +595,8 @@ h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 .heatmap .hm-cell.with-yoy .hm-yoy.yoy-neu { color: var(--ink-3); background: rgba(255,255,255,.7); }
 .heatmap .hm-corner { position: relative; }
 
-/* Heatmap hover tooltip (floating) */
+/* Heatmap hover tooltip (portal-rendered, viewport-fixed) */
 .hm-tooltip {
-  position: absolute;
   background: var(--bg-card);
   border: 1px solid var(--line);
   box-shadow: var(--shadow-pop);
@@ -607,11 +606,9 @@ h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
   font-size: 12px;
   color: var(--ink);
   min-width: 180px;
-  z-index: 50;
-  pointer-events: none;
   animation: hmTipIn .12s ease-out;
 }
-@keyframes hmTipIn { from { opacity:0; transform: translate(-50%, -105%); } to { opacity:1; transform: translate(-50%, -108%); } }
+@keyframes hmTipIn { from { opacity:0 } to { opacity:1 } }
 .hm-tt-header {
   display: flex; align-items: center; gap: 4px;
   padding-bottom: 8px; margin-bottom: 8px;
@@ -760,16 +757,14 @@ h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 .txt-3 { color: var(--ink-3); }
 .num { font-variant-numeric: tabular-nums; font-family: 'Bricolage Grotesque'; }
 
-/* Chart tooltip */
+/* Chart tooltip (portal-rendered, viewport-fixed via FloatingTooltip) */
 .chart-tip {
-  position: absolute;
   background: var(--bg-card);
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   padding: 8px 10px;
-  box-shadow: var(--shadow-card-hover);
+  box-shadow: var(--shadow-pop);
   font-size: 12px;
-  z-index: 5;
   pointer-events: none;
   min-width: 120px;
 }

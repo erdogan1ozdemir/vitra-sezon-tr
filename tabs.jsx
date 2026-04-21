@@ -15,6 +15,8 @@ window.TABS = (function(){
     'Vitrifiyeler': '#14B8A6',
     'Yıkanma Alanları': '#6366F1',
   };
+  // Expose to window so app.jsx global filter panel (and any future consumers) can read it
+  window.KAT1_COLORS = KAT1_COLORS;
   const katColor = k => KAT1_COLORS[k] || '#8A8A8A';
 
   // Globals

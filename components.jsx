@@ -3,6 +3,43 @@ window.C = (function(){
   const { fmtNum, fmtFull, fmtPct, TR_MONTHS, TR_MONTHS_LONG, hmColor, hmText, sparkPath, serialToMonthIdx } = U;
   const h = React.createElement;
 
+  // ======== FloatingTooltip ========
+  // Portal-rendered, viewport-positioned tooltip. Escapes overflow:auto/hidden parents
+  // and sits above sticky headers via high z-index. Used by all chart hovers.
+  //
+  // Props:
+  //   x, y        — viewport coords of the anchor (use getBoundingClientRect on the cell/point)
+  //   placement   — 'top' | 'bottom' | 'right' (default 'top'); auto-flips if it would clip
+  //   className   — wrapper class (default 'chart-tip')
+  function FloatingTooltip({ x, y, placement = 'top', offset = 10, className = 'chart-tip', children }) {
+    const ref = React.useRef(null);
+    React.useLayoutEffect(() => {
+      const el = ref.current;
+      if (!el) return;
+      const w = el.offsetWidth;
+      const hh = el.offsetHeight;
+      const pad = 12;
+      let left = x - w / 2;
+      let top = placement === 'bottom' ? y + offset : y - hh - offset;
+      // If placement 'top' would clip above viewport, flip to bottom of anchor
+      if (top < pad) top = y + offset;
+      // If placement 'bottom' would clip below viewport, flip up
+      if (top + hh + pad > window.innerHeight) top = Math.max(pad, y - hh - offset);
+      // Horizontal clamping
+      if (left + w + pad > window.innerWidth) left = window.innerWidth - w - pad;
+      if (left < pad) left = pad;
+      el.style.left = left + 'px';
+      el.style.top = top + 'px';
+    });
+    return ReactDOM.createPortal(
+      h('div', {
+        ref, className,
+        style: { position: 'fixed', left: -9999, top: -9999, zIndex: 2000, pointerEvents: 'none' }
+      }, children),
+      document.body
+    );
+  }
+
   // ======== Tooltip singleton ========
   function useTooltip() {
     const [tip, setTip] = React.useState(null);
@@ -102,15 +139,14 @@ window.C = (function(){
           style:{ background: hmColor(t), color: hmText(t) },
           onMouseEnter: (e) => {
             const rect = e.currentTarget.getBoundingClientRect();
-            const hostRect = hostRef.current?.getBoundingClientRect();
             setHover({
               ri, i, row, v,
               prev: row.prevValues ? row.prevValues[i] : null,
               yoy,
               isPeak,
               month: monthsLabels[i],
-              x: rect.left + rect.width/2 - (hostRect?.left||0),
-              y: rect.top - (hostRect?.top||0)
+              x: rect.left + rect.width/2,
+              y: rect.top
             });
           },
           onMouseLeave: () => setHover(null),
@@ -123,10 +159,7 @@ window.C = (function(){
     });
     return h('div',{className:'heatmap-host', ref:hostRef, style:{position:'relative'}},
       h('div',{className:'heatmap'+(showYoY?' with-yoy':'')}, grid),
-      hover && h('div',{
-        className:'hm-tooltip',
-        style:{ left: hover.x, top: hover.y, transform:'translate(-50%, -108%)' }
-      },
+      hover && h(FloatingTooltip, { x: hover.x, y: hover.y, placement: 'top', className: 'hm-tooltip' },
         h('div',{className:'hm-tt-header'},
           hover.isPeak && h('span',{className:'hm-tt-peak-dot'}),
           h('span',{className:'hm-tt-title'}, hover.row.label),
@@ -265,28 +298,45 @@ window.C = (function(){
         }),
         hoverI != null && h('line',{x1:xs[hoverI], x2:xs[hoverI], y1:pad.t, y2:pad.t+ch, stroke:'var(--ink-3)', strokeDasharray:'3 3'})
       ),
-      // Tooltip panel
-      hoverI != null && h('div',{
-        className:'chart-tip',
-        style:{
-          left: `calc(${(xs[hoverI]/w)*100}% + 10px)`,
-          top: 0, pointerEvents:'none'
-        }
-      },
-        h('div',{style:{fontWeight:600, marginBottom:2}}, labels[hoverI]),
-        series.map((s,i) => h('div',{key:i, style:{display:'flex',alignItems:'center',gap:6,fontSize:11}},
-          h('div',{style:{width:8,height:8,borderRadius:2,background:s.color||'var(--accent)'}}),
-          h('span',{style:{color:'var(--ink-2)'}}, s.name+': '),
-          h('span',{className:'num',style:{fontWeight:600}}, yFormat(s.values?.[hoverI]))
-        ))
-      )
+      // Tooltip panel — portal to body so it escapes chart clipping and sticky headers
+      hoverI != null && (() => {
+        const r = svgRef.current?.getBoundingClientRect();
+        if (!r) return null;
+        const anchorX = r.left + (xs[hoverI] / w) * r.width;
+        const anchorY = r.top + (pad.t / height) * r.height;
+        return h(FloatingTooltip, { x: anchorX, y: anchorY, placement: 'top' },
+          h('div',{style:{fontWeight:600, marginBottom:2}}, labels[hoverI]),
+          series.map((s,i) => h('div',{key:i, style:{display:'flex',alignItems:'center',gap:6,fontSize:11}},
+            h('div',{style:{width:8,height:8,borderRadius:2,background:s.color||'var(--accent)'}}),
+            h('span',{style:{color:'var(--ink-2)'}}, s.name+': '),
+            h('span',{className:'num',style:{fontWeight:600}}, yFormat(s.values?.[hoverI]))
+          ))
+        );
+      })()
     );
   }
 
   // === BarChart with hover tooltip ===
+  // Responsive: observes container width via ResizeObserver and redraws at that width
+  // (so aspect ratio doesn't squash the chart in narrow cards).
   function BarChart({data, height=220, yFormat=fmtPct, colorBy='yoy', onBarClick}) {
     const [hoverI, setHoverI] = React.useState(null);
-    const w = 720, pad = {t:20, r:16, b:56, l:44};
+    const wrapRef = React.useRef(null);
+    const svgRef = React.useRef(null);
+    const [containerW, setContainerW] = React.useState(720);
+
+    React.useLayoutEffect(() => {
+      const el = wrapRef.current;
+      if (!el || typeof ResizeObserver === 'undefined') return;
+      const set = () => { const cw = el.clientWidth; if (cw > 0) setContainerW(cw); };
+      set();
+      const ro = new ResizeObserver(set);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }, []);
+
+    const w = Math.max(320, containerW);
+    const pad = {t:20, r:16, b:56, l:44};
     const cw = w - pad.l - pad.r, ch = height - pad.t - pad.b;
     const vals = data.map(d=>d.value);
     const maxV = Math.max(...vals, 0), minV = Math.min(...vals, 0);
@@ -296,8 +346,13 @@ window.C = (function(){
     const bw = cw / n * .7;
     const step = cw / n;
     const zero = yAt(0);
-    return h('div',{style:{position:'relative'}},
-      h('svg',{viewBox:`0 0 ${w} ${height}`, style:{width:'100%', height:'auto', display:'block'}},
+    return h('div',{ref: wrapRef, style:{position:'relative', width:'100%'}},
+      h('svg',{
+        ref: svgRef,
+        viewBox:`0 0 ${w} ${height}`,
+        width: w, height,
+        style:{width:'100%', height, display:'block'}
+      },
         h('line',{x1:pad.l, x2:pad.l+cw, y1:zero, y2:zero, stroke:'var(--line)'}),
         data.map((d,i) => {
           const x = pad.l + i*step + (step-bw)/2;
@@ -312,17 +367,13 @@ window.C = (function(){
         })
       ),
       hoverI != null && (() => {
-        const centerPct = ((pad.l + hoverI*step + step/2)/w)*100;
-        // Clamp to avoid edges: when near the left/right edge, anchor the tip start/end instead of center
-        const near = 12; // percent margin for edge handling
-        let left = centerPct + '%';
-        let transform = 'translateX(-50%)';
-        if (centerPct < near) { left = '0%'; transform = 'translateX(0)'; }
-        else if (centerPct > 100 - near) { left = '100%'; transform = 'translateX(-100%)'; }
-        return h('div',{
-          className:'chart-tip',
-          style:{ left, top: 4, transform, pointerEvents:'none', position:'absolute', maxWidth: 260 }
-        },
+        const svgRect = svgRef.current?.getBoundingClientRect();
+        if (!svgRect) return null;
+        const barCenterX = pad.l + hoverI*step + step/2;
+        const barTopY = Math.min(zero, yAt(data[hoverI].value));
+        const anchorX = svgRect.left + (barCenterX / w) * svgRect.width;
+        const anchorY = svgRect.top + (barTopY / height) * svgRect.height;
+        return h(FloatingTooltip, { x: anchorX, y: anchorY, placement: 'top' },
           h('div',{style:{fontWeight:600, whiteSpace:'normal'}}, data[hoverI].label),
           h('div',{className:'num'}, yFormat(data[hoverI].value))
         );
@@ -354,8 +405,9 @@ window.C = (function(){
       };
     });
     const hovered = hoverI!=null ? slicePaths[hoverI] : null;
+    const svgRef = React.useRef(null);
     return h('div',{style:{position:'relative', width:size, height:size}},
-      h('svg',{viewBox:`0 0 ${size} ${size}`, style:{width:size, height:size, display:'block'}},
+      h('svg',{ref: svgRef, viewBox:`0 0 ${size} ${size}`, style:{width:size, height:size, display:'block'}},
         slicePaths.map(s => h('path',{
           key:s.i, d:s.d, fill:s.color, stroke:'var(--bg-card)', strokeWidth:1.5,
           style:{cursor: onSliceClick?'pointer':'default', transition:'opacity .15s'},
@@ -373,18 +425,21 @@ window.C = (function(){
           h('text',{x:cx, y:cy+13, fontSize:14, fontFamily:'Bricolage Grotesque', fontWeight:600, fill:'var(--ink)', textAnchor:'middle'}, fmtNum(total))
         )
       ),
-      hovered && h('div',{
-        className:'chart-tip',
-        style:{ left:'50%', top: size + 6, transform:'translateX(-50%)', pointerEvents:'none', whiteSpace:'nowrap' }
-      },
-        h('div',{style:{display:'flex',alignItems:'center',gap:6}},
-          h('div',{style:{width:8,height:8,borderRadius:2,background:hovered.color}}),
-          h('span',{style:{fontWeight:600}}, hovered.label)
-        ),
-        h('div',{className:'num',style:{fontSize:11,color:'var(--ink-2)'}},
-          fmtFull(hovered.value) + ' · ' + (hovered.pct*100).toFixed(1).replace('.',',') + '%'
-        )
-      )
+      hovered && (() => {
+        const r = svgRef.current?.getBoundingClientRect();
+        if (!r) return null;
+        const anchorX = r.left + r.width / 2;
+        const anchorY = r.bottom;
+        return h(FloatingTooltip, { x: anchorX, y: anchorY, placement: 'bottom' },
+          h('div',{style:{display:'flex',alignItems:'center',gap:6}},
+            h('div',{style:{width:8,height:8,borderRadius:2,background:hovered.color}}),
+            h('span',{style:{fontWeight:600}}, hovered.label)
+          ),
+          h('div',{className:'num',style:{fontSize:11,color:'var(--ink-2)'}},
+            fmtFull(hovered.value) + ' · ' + (hovered.pct*100).toFixed(1).replace('.',',') + '%'
+          )
+        );
+      })()
     );
   }
 
@@ -525,11 +580,11 @@ window.C = (function(){
 
   function SmallMultipleItem({ item: it, max, height, monthsLabels, onClick }) {
     const [hoverI, setHoverI] = React.useState(null);
+    const svgRef = React.useRef(null);
     const peakI = it.values.indexOf(Math.max(...it.values));
     const total = it.values.reduce((a,b)=>a+b,0);
     const color = it.color || 'var(--accent)';
     const activeI = hoverI != null ? hoverI : peakI;
-    const activeLabel = hoverI != null ? monthsLabels[hoverI] : monthsLabels[peakI];
     const activeValue = it.values[activeI];
 
     return h('div',{
@@ -543,6 +598,7 @@ window.C = (function(){
       ),
       h('div',{className:'sm-body', style:{position:'relative'}},
         h('svg',{
+          ref: svgRef,
           viewBox:`0 0 ${12*8} ${height}`, preserveAspectRatio:'none',
           style:{width:'100%', height, cursor:'crosshair'},
           onMouseMove: (e) => {
@@ -567,23 +623,16 @@ window.C = (function(){
             });
           })
         ),
-        hoverI != null && h('div',{
-          className: 'sm-tip',
-          style:{
-            position:'absolute',
-            left: `${((hoverI + 0.5) / 12) * 100}%`,
-            bottom: height + 4,
-            transform: `translateX(${hoverI < 2 ? '0' : hoverI > 9 ? '-100%' : '-50%'})`,
-            background: 'var(--ink)', color: 'var(--bg-card)',
-            fontSize: 10, lineHeight: 1.3, padding: '4px 7px',
-            borderRadius: 4, whiteSpace: 'nowrap', pointerEvents:'none',
-            fontFamily: 'Outfit', fontWeight: 500, zIndex: 2,
-            boxShadow: 'var(--shadow-pop)'
-          }
-        },
-          h('div',{style:{fontWeight:700}}, monthsLabels[hoverI]),
-          h('div',{style:{fontFamily:'Bricolage Grotesque', fontWeight:700}}, fmtFull(it.values[hoverI]))
-        )
+        hoverI != null && (() => {
+          const r = svgRef.current?.getBoundingClientRect();
+          if (!r) return null;
+          const anchorX = r.left + ((hoverI + 0.5) / 12) * r.width;
+          const anchorY = r.top;
+          return h(FloatingTooltip, { x: anchorX, y: anchorY, placement: 'top', className: 'sm-tip chart-tip' },
+            h('div',{style:{fontWeight:700}}, monthsLabels[hoverI]),
+            h('div',{style:{fontFamily:'Bricolage Grotesque', fontWeight:700}}, fmtFull(it.values[hoverI]))
+          );
+        })()
       ),
       h('div',{className:'sm-footer'},
         h('span',{className:'sm-peak'},
