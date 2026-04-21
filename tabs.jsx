@@ -159,8 +159,8 @@ window.TABS = (function(){
     const top10 = [...fKeywords].sort((a,b)=>b.a25-a.a25).slice(0,10);
 
     const contributors = fKeywords.map(k => ({...k, delta: (k.a25 - k.a24) * 12})).filter(k => !isNaN(k.delta));
-    const topGainers = [...contributors].sort((a,b) => b.delta - a.delta).slice(0, 5);
-    const topLosers = [...contributors].sort((a,b) => a.delta - b.delta).slice(0, 5);
+    const topGainers = [...contributors].sort((a,b) => b.delta - a.delta).slice(0, 10);
+    const topLosers = [...contributors].sort((a,b) => a.delta - b.delta).slice(0, 10);
 
     // Donut data - global filter derinliğine göre drill-down:
     //   hiç filtre yok            → Kat 1 pay dağılımı
