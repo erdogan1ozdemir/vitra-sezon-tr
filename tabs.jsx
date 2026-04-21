@@ -118,11 +118,49 @@ window.TABS = (function(){
     const topGainers = [...contributors].sort((a,b) => b.delta - a.delta).slice(0, 5);
     const topLosers = [...contributors].sort((a,b) => a.delta - b.delta).slice(0, 5);
 
-    // Donut data — filtered (donut always shows kat1 share; when filter narrows, just those kat1s)
-    const donutData = g_k1Set
-      ? D.kat1Summary.filter(k => g_k1Set.has(k.k1))
-      : D.kat1Summary;
-    const donutTotal = donutData.reduce((a,k)=>a+k.tot25, 0);
+    // Donut data — global filter derinliğine göre drill-down:
+    //   hiç filtre yok            → Kat 1 pay dağılımı
+    //   sadece K1 seçili          → Kat 2 alt kırılımı (seçili K1'ler içinde)
+    //   K2 seçili                 → Kat 3 alt kırılımı (seçili K2'ler içinde)
+    //   K3 seçili                 → Kat 3 (sadece seçili K3 item'ları)
+    const donutLevel = globalK2.length || (globalK3.length && !globalK1.length && !globalK2.length)
+      ? 'kat3'
+      : globalK1.length ? 'kat2' : 'kat1';
+    const donutData = React.useMemo(() => {
+      let items;
+      if (donutLevel === 'kat1') {
+        items = D.kat1Summary.map(k => ({
+          label: k.k1, key: k.k1, parentK1: k.k1, value: k.tot25, sub: null
+        }));
+      } else if (donutLevel === 'kat2') {
+        items = D.kat2Monthly
+          .filter(r => !g_k1Set || g_k1Set.has(r.labels[0]))
+          .map(r => ({
+            label: r.labels[1],
+            key: r.labels[0] + '>' + r.labels[1],
+            parentK1: r.labels[0],
+            value: (r.m25 || []).reduce((a,b)=>a+b, 0),
+            sub: r.labels[0]
+          }));
+      } else {
+        items = D.kat3Monthly
+          .filter(r => {
+            if (g_k1Set && !g_k1Set.has(r.labels[0])) return false;
+            if (g_k2Set && !g_k2Set.has(r.labels[1])) return false;
+            if (g_k3Set && !g_k3Set.has(r.labels[2])) return false;
+            return true;
+          })
+          .map(r => ({
+            label: r.labels[2],
+            key: r.labels.join('>'),
+            parentK1: r.labels[0],
+            value: (r.m25 || []).reduce((a,b)=>a+b, 0),
+            sub: r.labels.slice(0, 2).join(' > ')
+          }));
+      }
+      return items.filter(x => x.value > 0).sort((a, b) => b.value - a.value);
+    }, [donutLevel, globalK1, globalK2, globalK3]);
+    const donutTotal = donutData.reduce((a,k)=>a+k.value, 0);
 
     // YoY bars (level selector)
     const yoyData = React.useMemo(() => {
@@ -345,42 +383,80 @@ window.TABS = (function(){
           h('div',{className:'card-header'},
             h('h3',null,'Kategori Pazar Payı',
               h(InfoIcon,null,
-                h('strong',null,'Ne gösterir? '),'Seçili kategoriler arasında toplam aramanın ne kadarını kim alıyor.',
-                h('br'),h('br'),h('strong',null,'Nasıl okunur? '),'Büyük dilim = çok aranan kategori. Dilimin üzerine gelindiğinde yüzde & hacim görünür. Tıklandığında Kategoriler sekmesinde o kategoriye filtreli şekilde inilir.',
+                h('strong',null,'Ne gösterir? '),'Seçili kategoriler arasında toplam aramanın ne kadarını kim alıyor. Global filtre derinliğine göre otomatik drill-down: filtresiz Kat 1, Kat 1 seçildiğinde o Kat 1\'in Kat 2 alt kırılımı, Kat 2 seçildiğinde Kat 3 alt kırılımı.',
+                h('br'),h('br'),h('strong',null,'Nasıl okunur? '),'Büyük dilim = çok aranan kategori. Aynı Kat 1 altındaki alt kategoriler aynı renkten türetilir. Dilime tıklayınca o seviyedeki filtre toggle olur.',
                 h('br'),h('br'),h('strong',null,'Ne için kullanılır? '),'Pazar ağırlığı & yatırım önceliğine dair içgörü çıkarmak için kullanılabilir.'
               )
             ),
-            h('div',{className:'hint'},'2025 · tıkla & filtrele dashboard')
+            h('div',{className:'hint'},
+              donutLevel === 'kat1' ? '2025 · Kat 1 dağılımı · tıkla & filtrele'
+              : donutLevel === 'kat2' ? `2025 · Kat 2 alt kırılımı · ${donutData.length} kategori`
+              : `2025 · Kat 3 alt kırılımı · ${donutData.length} ürün`
+            )
           ),
           h('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:12, flexWrap:'wrap'}},
-            h(Donut,{size:180,
-              data:donutData.map(k=>({label:k.k1, value:k.tot25, color:katColor(k.k1)})),
-              onSliceClick:(d)=>{
-                // Cross-filter: toggle K1 in global filter
-                setGlobalK1(prev => prev.includes(d.label) ? prev.filter(x => x !== d.label) : [...prev, d.label]);
-                setGlobalK2([]); setGlobalK3([]);
+            h(Donut,{
+              size: donutLevel === 'kat1' ? 180 : 200,
+              data: donutData.map((k, idx) => {
+                const base = katColor(k.parentK1);
+                // Alt seviyelerde: aynı K1 içindeki dilimleri birbirinden ayırmak için opacity varyasyonu
+                const color = donutLevel === 'kat1'
+                  ? base
+                  : `color-mix(in srgb, ${base} ${Math.max(55, 100 - (idx % 5) * 10)}%, var(--bg-card))`;
+                return { label: k.label, value: k.value, color };
+              }),
+              onSliceClick: (d) => {
+                const k = donutData.find(x => x.label === d.label);
+                if (!k) return;
+                if (donutLevel === 'kat1') {
+                  setGlobalK1(prev => prev.includes(k.label) ? prev.filter(x => x !== k.label) : [...prev, k.label]);
+                  setGlobalK2([]); setGlobalK3([]);
+                } else if (donutLevel === 'kat2') {
+                  setGlobalK2(prev => prev.includes(k.label) ? prev.filter(x => x !== k.label) : [...prev, k.label]);
+                  setGlobalK3([]);
+                } else {
+                  setGlobalK3(prev => prev.includes(k.label) ? prev.filter(x => x !== k.label) : [...prev, k.label]);
+                }
                 window.scrollTo({top:0, behavior:'smooth'});
               }
             })
           ),
-          h('div',{className:'legend', style:{flexDirection:'column',alignItems:'flex-start'}},
-            donutData.slice().sort((a,b)=>b.tot25-a.tot25).map(k => {
-              const share = donutTotal ? k.tot25 / donutTotal : 0;
-              const isActive = globalK1.includes(k.k1);
+          h('div',{className:'legend donut-legend', style:{flexDirection:'column',alignItems:'flex-start', maxHeight:260, overflowY:'auto', width:'100%'}},
+            donutData.map((k, idx) => {
+              const share = donutTotal ? k.value / donutTotal : 0;
+              const base = katColor(k.parentK1);
+              const swatchColor = donutLevel === 'kat1'
+                ? base
+                : `color-mix(in srgb, ${base} ${Math.max(55, 100 - (idx % 5) * 10)}%, var(--bg-card))`;
+              const isActive =
+                  (donutLevel === 'kat1' && globalK1.includes(k.label))
+                || (donutLevel === 'kat2' && globalK2.includes(k.label))
+                || (donutLevel === 'kat3' && globalK3.includes(k.label));
               return h('div',{
-                key:k.k1,className:'li'+(isActive?' active':''),
-                style:{cursor:'pointer', width:'100%', justifyContent:'space-between', padding:'2px 6px', borderRadius:4, background: isActive ? 'var(--accent-wash)' : 'transparent'},
-                onClick:()=>{
-                  setGlobalK1(prev => prev.includes(k.k1) ? prev.filter(x => x !== k.k1) : [...prev, k.k1]);
-                  setGlobalK2([]); setGlobalK3([]);
+                key: k.key,
+                className: 'li' + (isActive ? ' active' : ''),
+                style: {cursor:'pointer', width:'100%', justifyContent:'space-between', padding:'3px 6px', borderRadius:4, background: isActive ? 'var(--accent-wash)' : 'transparent', flexShrink: 0},
+                onClick: () => {
+                  if (donutLevel === 'kat1') {
+                    setGlobalK1(prev => prev.includes(k.label) ? prev.filter(x => x !== k.label) : [...prev, k.label]);
+                    setGlobalK2([]); setGlobalK3([]);
+                  } else if (donutLevel === 'kat2') {
+                    setGlobalK2(prev => prev.includes(k.label) ? prev.filter(x => x !== k.label) : [...prev, k.label]);
+                    setGlobalK3([]);
+                  } else {
+                    setGlobalK3(prev => prev.includes(k.label) ? prev.filter(x => x !== k.label) : [...prev, k.label]);
+                  }
                   window.scrollTo({top:0, behavior:'smooth'});
                 }
               },
-                h('div',{style:{display:'flex',alignItems:'center',gap:6}},
-                  h('div',{className:'swatch',style:{background:katColor(k.k1)}}),
-                  h('span', null, k.k1)
+                h('div',{style:{display:'flex',alignItems:'center',gap:6, minWidth:0, flex:1}},
+                  h('div',{className:'swatch', style:{background: swatchColor, flexShrink:0}}),
+                  h('div',{style:{minWidth:0, overflow:'hidden'}},
+                    h('div',{style:{whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}, k.label),
+                    k.sub && h('div',{className:'txt-3', style:{fontSize:9.5, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}, k.sub)
+                  )
                 ),
-                h('span',{className:'txt-3', style:{fontSize:11}}, (share*100).toFixed(1).replace('.',',')+'%')
+                h('span',{className:'txt-3', style:{fontSize:11, flexShrink:0, marginLeft:8}}, (share*100).toFixed(1).replace('.',',')+'%')
               );
             })
           )

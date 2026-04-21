@@ -661,6 +661,9 @@ h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 
 /* Donut legend */
 .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 12px; }
+/* Donut legend: tek sütun dikey liste (flex-wrap:wrap ile çok-sütunlu taşmasın) */
+.donut-legend { flex-wrap: nowrap !important; gap: 4px !important; }
+.donut-legend .li { min-height: 24px; }
 .legend .li { display: flex; align-items: center; gap: 6px; }
 .legend .swatch { width: 10px; height: 10px; border-radius: 2px; }
 
