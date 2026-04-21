@@ -389,7 +389,7 @@ window.C = (function(){
   }
 
   // === Info icon with centered modal popover ===
-  function InfoIcon({children, title='Bilgi'}) {
+  function InfoIcon({children, title='Bilgi', className}) {
     const [open, setOpen] = React.useState(false);
     React.useEffect(() => {
       if (!open) return;
@@ -405,7 +405,7 @@ window.C = (function(){
     }, [open]);
     return h(React.Fragment, null,
       h('button',{
-        className:'info-icon',
+        className: className || 'info-icon',
         onClick:(e)=>{e.stopPropagation(); setOpen(o=>!o);},
         'aria-label':'Bilgi'
       }, '?'),
@@ -515,42 +515,83 @@ window.C = (function(){
   function SmallMultiples({ items, height=56, monthsLabels=TR_MONTHS, yScale='shared', onClick }) {
     const globalMax = yScale === 'shared' ? Math.max(1, ...items.flatMap(it => it.values)) : null;
     return h('div',{className:'small-mults'},
-      items.map((it, idx) => {
-        const max = yScale === 'shared' ? globalMax : Math.max(1, ...it.values);
-        const peakI = it.values.indexOf(Math.max(...it.values));
-        const total = it.values.reduce((a,b)=>a+b,0);
-        return h('div',{
-          key:it.label,
-          className:'sm-item'+(onClick?' clickable':''),
-          onClick: onClick ? () => onClick(it) : undefined
+      items.map((it, idx) => h(SmallMultipleItem, {
+        key: it.label, item: it, idx,
+        max: yScale === 'shared' ? globalMax : Math.max(1, ...it.values),
+        height, monthsLabels, onClick
+      }))
+    );
+  }
+
+  function SmallMultipleItem({ item: it, max, height, monthsLabels, onClick }) {
+    const [hoverI, setHoverI] = React.useState(null);
+    const peakI = it.values.indexOf(Math.max(...it.values));
+    const total = it.values.reduce((a,b)=>a+b,0);
+    const color = it.color || 'var(--accent)';
+    const activeI = hoverI != null ? hoverI : peakI;
+    const activeLabel = hoverI != null ? monthsLabels[hoverI] : monthsLabels[peakI];
+    const activeValue = it.values[activeI];
+
+    return h('div',{
+      className:'sm-item'+(onClick?' clickable':''),
+      onClick: onClick ? () => onClick(it) : undefined
+    },
+      h('div',{className:'sm-header'},
+        h('div',{className:'sm-dot', style:{background: color}}),
+        h('div',{className:'sm-label'}, it.label),
+        it.yoy != null && h('span',{className:'pill '+(it.yoy>0.02?'pos':it.yoy<-0.02?'neg':'neu'),style:{marginLeft:'auto',fontSize:10,padding:'1px 6px'}}, fmtPct(it.yoy,0))
+      ),
+      h('div',{className:'sm-body', style:{position:'relative'}},
+        h('svg',{
+          viewBox:`0 0 ${12*8} ${height}`, preserveAspectRatio:'none',
+          style:{width:'100%', height, cursor:'crosshair'},
+          onMouseMove: (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const rel = (e.clientX - rect.left) / rect.width;
+            const i = Math.max(0, Math.min(11, Math.floor(rel * 12)));
+            setHoverI(i);
+          },
+          onMouseLeave: () => setHoverI(null)
         },
-          h('div',{className:'sm-header'},
-            h('div',{className:'sm-dot', style:{background: it.color || 'var(--accent)'}}),
-            h('div',{className:'sm-label'}, it.label),
-            it.yoy != null && h('span',{className:'pill '+(it.yoy>0.02?'pos':it.yoy<-0.02?'neg':'neu'),style:{marginLeft:'auto',fontSize:10,padding:'1px 6px'}}, fmtPct(it.yoy,0))
-          ),
-          h('div',{className:'sm-body'},
-            h('svg',{viewBox:`0 0 ${12*8} ${height}`, preserveAspectRatio:'none', style:{width:'100%',height}},
-              // bars
-              it.values.map((v,i) => {
-                const barH = (v / max) * (height - 6);
-                const x = i * 8 + 1;
-                const y = height - barH;
-                const isPeak = i === peakI;
-                return h('rect',{
-                  key:i, x, y, width:6, height: Math.max(1, barH),
-                  rx:1,
-                  fill: isPeak ? (it.color || 'var(--accent)') : `color-mix(in srgb, ${it.color || 'var(--accent)'} 35%, transparent)`
-                });
-              })
-            )
-          ),
-          h('div',{className:'sm-footer'},
-            h('span',{className:'sm-peak'}, 'Peak: ', h('strong',null, monthsLabels[peakI])),
-            h('span',{className:'sm-total'}, fmtNum(total))
-          )
-        );
-      })
+          it.values.map((v,i) => {
+            const barH = (v / max) * (height - 6);
+            const x = i * 8 + 1;
+            const y = height - barH;
+            const isPeak = i === peakI;
+            const isHover = i === hoverI;
+            return h('rect',{
+              key:i, x, y, width:6, height: Math.max(1, barH),
+              rx:1,
+              fill: (isHover || isPeak) ? color : `color-mix(in srgb, ${color} 35%, transparent)`,
+              style:{transition: 'fill .08s'}
+            });
+          })
+        ),
+        hoverI != null && h('div',{
+          className: 'sm-tip',
+          style:{
+            position:'absolute',
+            left: `${((hoverI + 0.5) / 12) * 100}%`,
+            bottom: height + 4,
+            transform: `translateX(${hoverI < 2 ? '0' : hoverI > 9 ? '-100%' : '-50%'})`,
+            background: 'var(--ink)', color: 'var(--bg-card)',
+            fontSize: 10, lineHeight: 1.3, padding: '4px 7px',
+            borderRadius: 4, whiteSpace: 'nowrap', pointerEvents:'none',
+            fontFamily: 'Outfit', fontWeight: 500, zIndex: 2,
+            boxShadow: 'var(--shadow-pop)'
+          }
+        },
+          h('div',{style:{fontWeight:700}}, monthsLabels[hoverI]),
+          h('div',{style:{fontFamily:'Bricolage Grotesque', fontWeight:700}}, fmtFull(it.values[hoverI]))
+        )
+      ),
+      h('div',{className:'sm-footer'},
+        h('span',{className:'sm-peak'},
+          hoverI != null ? monthsLabels[hoverI] + ': ' : 'Peak: ',
+          h('strong',null, hoverI != null ? fmtFull(activeValue) : monthsLabels[peakI])
+        ),
+        h('span',{className:'sm-total'}, hoverI != null ? ('Toplam ' + fmtNum(total)) : fmtNum(total))
+      )
     );
   }
 

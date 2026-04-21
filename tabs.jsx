@@ -72,10 +72,6 @@ window.TABS = (function(){
     const [qFilter, setQFilter] = React.useState({k1:'', k2:''});
     const [yoyLevel, setYoyLevel] = React.useState('kat1');
     const [yoyFilter, setYoyFilter] = React.useState({k1:'', k2:''});
-    const [flowLevel, setFlowLevel] = React.useState('kat1');
-    const [flowFilterK1, setFlowFilterK1] = React.useState('');
-    const [rankLevel, setRankLevel] = React.useState('kat1');
-    const [rankFilterK1, setRankFilterK1] = React.useState('');
 
     // Global filter from props (lifted to app.jsx — panel now sits under the tabs)
     const {globalK1, globalK2, globalK3, setGlobalK1, setGlobalK2, setGlobalK3, hasGlobalFilter} = globalFilter;
@@ -246,7 +242,7 @@ window.TABS = (function(){
             series:[
               {name:'2024', values:f_MONTHLY_24, color:'color-mix(in srgb, var(--ink-3) 80%, transparent)'},
               {name:'2025', values:f_MONTHLY_25, color:'var(--coral)', peakIdx:f_PEAK_IDX}
-            ], legend:false, height:64, compact:true
+            ], legend:true, height:140
           })
         ),
         h('div',{className:'hk-right'},
@@ -262,31 +258,39 @@ window.TABS = (function(){
           h('div',{className:'km-label'},'Keyword'),
           h('div',{className:'km-value'}, fmtFull(f_TOTAL_KW)),
           h('div',{className:'km-sub'}, hasGlobalFilter ? `${globalK1.length + globalK2.length + globalK3.length} filtre` : `${D.kat1Summary.length} K1 · ${D.kat2Monthly.length} K2`),
-          h('div',{className:'kpi-info', title:'Filtrelenmiş keyword sayısı. 2024 VEYA 2025 hacmi > 0 olanlar sayılır.'}, '?')
+          h(InfoIcon,{className:'kpi-info', title:'Keyword Sayısı'},
+            h('strong',null,'Ne? '),'Filtrelenmiş keyword sayısı. 2024 VEYA 2025 hacmi > 0 olanlar sayılır.'
+          )
         ),
         h('div',{className:'kpi-mini'},
           h('div',{className:'km-label'},'Yükselen'),
           h('div',{className:'km-value', style:{color:'var(--green)'}}, fmtFull(risingCnt)),
-          h('div',{className:'km-sub'}, h('span',{className:'pill pos',style:{fontSize:10,padding:'1px 5px'}}, '↑'), `YoY > +5%`),
-          h('div',{className:'kpi-info', title:'2025 hacmi 2024\'e göre %5 veya daha fazla artan keyword sayısı.'}, '?')
+          h(InfoIcon,{className:'kpi-info', title:'Yükselen Keyword'},
+            h('strong',null,'Ne? '),'2025 hacmi 2024\'e göre %5 veya daha fazla artan keyword sayısı.'
+          )
         ),
         h('div',{className:'kpi-mini'},
           h('div',{className:'km-label'},'Düşen'),
           h('div',{className:'km-value', style:{color:'var(--red)'}}, fmtFull(fallingCnt)),
-          h('div',{className:'km-sub'}, h('span',{className:'pill neg',style:{fontSize:10,padding:'1px 5px'}}, '↓'), `YoY < -5%`),
-          h('div',{className:'kpi-info', title:'2025 hacmi 2024\'e göre %5 veya daha fazla düşen keyword sayısı.'}, '?')
+          h(InfoIcon,{className:'kpi-info', title:'Düşen Keyword'},
+            h('strong',null,'Ne? '),'2025 hacmi 2024\'e göre %5 veya daha fazla düşen keyword sayısı.'
+          )
         ),
         h('div',{className:'kpi-mini'},
           h('div',{className:'km-label'},'Peak Ay'),
           h('div',{className:'km-value'}, TR_MONTHS[f_PEAK_IDX]),
           h('div',{className:'km-sub'}, fmtFull(f_MONTHLY_25[f_PEAK_IDX]), ' arama'),
-          h('div',{className:'kpi-info', title:'2025\'te en yüksek toplam arama hacmine sahip ay.'}, '?')
+          h(InfoIcon,{className:'kpi-info', title:'Peak Ay'},
+            h('strong',null,'Ne? '),'Seçili filtrede en yüksek toplam arama hacmine sahip ay. Global kategori filtresini değiştirdikçe bu değer seçilen kategorilere göre güncellenir.'
+          )
         ),
         h('div',{className:'kpi-mini'},
           h('div',{className:'km-label'},'Fiyat Intent'),
           h('div',{className:'km-value'}, fmtNum(f_PRICE_TOTAL)),
           h('div',{className:'km-sub'}, h('span',{className:'pill '+trendClass(f_PRICE_YOY),style:{fontSize:10,padding:'1px 5px'}}, fmtPct(f_PRICE_YOY)), `${f_PRICE.length} KW`),
-          h('div',{className:'kpi-info', title:'İçinde "fiyat/fiyatı/ucuz/kaç para" geçen keywordlerin toplam hacmi. Satın alma niyeti göstergesi.'}, '?')
+          h(InfoIcon,{className:'kpi-info', title:'Fiyat Intent'},
+            h('strong',null,'Ne? '),'İçinde "fiyat/fiyatı/ucuz/kaç para" geçen keywordlerin toplam hacmi. Satın alma niyeti göstergesi.'
+          )
         )
       ),
 
@@ -476,124 +480,6 @@ window.TABS = (function(){
           h(PolarPeak, { values: f_MONTHLY_25, color:'var(--coral)', size: 260, year: 2025 })
         )
       ),
-
-      // ==== Stream + Bump section ====
-      h(SectionHeader, {
-        accent:'coral',
-        icon: h('svg',{width:22,height:22,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
-          h('path',{d:'M3 12h18M12 3v18'}),
-          h('path',{d:'M7 7l5 5 5-5'})
-        ),
-        title:'Kategori Dinamiği · Akış & Sıralama',
-        desc:'Kategorilerin yıl içindeki pazar payı dalgalanması ve yıllık sıralama değişimi.'
-      }),
-      (() => {
-      const flowSource = flowLevel === 'kat1' ? D.kat1Monthly
-        : flowLevel === 'kat2' ? D.kat2Monthly.filter(r => !flowFilterK1 || r.labels[0] === flowFilterK1)
-        : D.kat3Monthly.filter(r => !flowFilterK1 || r.labels[0] === flowFilterK1);
-      const flowSeries = flowSource
-        .map(r => {
-          const values = r.m25 || r.val25 || r.val || [];
-          const total = values.reduce((a,b)=>a+b,0);
-          const label = flowLevel === 'kat1' ? r.labels[0] : r.labels.slice(-1)[0];
-          return { label, color: KAT1_COLORS[r.labels[0]] || 'var(--accent)', values, total, k1: r.labels[0] };
-        })
-        .filter(s => s.total > 0)
-        .sort((a,b) => b.total - a.total)
-        .slice(0, 12);
-
-      const rankSource = rankLevel === 'kat1' ? D.kat1Summary.map(k => ({k1:k.k1, label:k.k1, tot24:k.tot24, tot25:k.tot25}))
-        : rankLevel === 'kat2'
-          ? D.kat2Monthly.filter(r => !rankFilterK1 || r.labels[0] === rankFilterK1)
-              .map(r => {
-                const prev = m24ForLabels('kat2', r.labels);
-                return {k1:r.labels[0], label:r.labels[1], tot24:prev.reduce((a,b)=>a+b,0), tot25:(r.m25||[]).reduce((a,b)=>a+b,0)};
-              })
-          : D.kat3Monthly.filter(r => !rankFilterK1 || r.labels[0] === rankFilterK1)
-              .map(r => {
-                const prev = m24ForLabels('kat3', r.labels);
-                return {k1:r.labels[0], label:r.labels[2], tot24:prev.reduce((a,b)=>a+b,0), tot25:(r.m25||[]).reduce((a,b)=>a+b,0)};
-              });
-      const rankTop = [...rankSource].sort((a,b)=>b.tot25-a.tot25).slice(0, 12);
-      const by24 = [...rankTop].sort((a,b)=>b.tot24-a.tot24).map((k,i) => ({label:k.label, rank:i+1}));
-      const by25 = [...rankTop].sort((a,b)=>b.tot25-a.tot25).map((k,i) => ({label:k.label, rank:i+1}));
-      const bumpItems = rankTop.map(k => ({
-        label: k.label,
-        color: KAT1_COLORS[k.k1] || 'var(--accent)',
-        rank24: by24.find(x => x.label === k.label).rank,
-        rank25: by25.find(x => x.label === k.label).rank,
-        value24: k.tot24,
-        value25: k.tot25
-      }));
-
-      return h('div',{className:'grid', style:{gridTemplateColumns:'1.3fr 1fr', gap:18, marginBottom:18}},
-        h('div',{className:'card'},
-          h('div',{className:'card-header',style:{flexWrap:'wrap',gap:8}},
-            h('h3',{style:{flex:1,minWidth:200}},'Kategori Pazar Payı Akışı',
-              h(InfoIcon,null,
-                h('strong',null,'Ne gösterir? '),'12 ay boyunca her kategorinin toplam aramadaki payının nasıl değiştiğini bir "akış" olarak gösterir.',
-                h('br'),h('br'),h('strong',null,'Nasıl okunur? '),'Genişlik = hacim. Üst-alt değil, kalın-ince bantlara bakılır. Kalın bölgeler o ayda kategorinin payının yüksek olduğu, ince bölgeler az aranmasıdır.',
-                h('br'),h('br'),h('strong',null,'Ne için? '),'Donut\'un zaman ekseni eklenmiş hali. Mevsimsel paylaşım değişimleri bir bakışta görülür.'
-              )
-            ),
-            h('div',{className:'segmented'},
-              h('button',{className:flowLevel==='kat1'?'active':'', onClick:()=>{setFlowLevel('kat1'); setFlowFilterK1('');}}, 'Kat 1'),
-              h('button',{className:flowLevel==='kat2'?'active':'', onClick:()=>setFlowLevel('kat2')}, 'Kat 2'),
-              h('button',{className:flowLevel==='kat3'?'active':'', onClick:()=>setFlowLevel('kat3')}, 'Kat 3')
-            ),
-            flowLevel !== 'kat1' && h('select',{className:'select', value:flowFilterK1, onChange:e=>setFlowFilterK1(e.target.value)},
-              h('option',{value:''}, 'Tüm Kat 1'),
-              D.kat1Summary.map(k => h('option',{key:k.k1, value:k.k1}, k.k1))
-            )
-          ),
-          flowSeries.length > 0
-            ? (flowLevel === 'kat1'
-              ? h(StreamGraph, { series: flowSeries, height: 280 })
-              : h(LineChart, {
-                  series: flowSeries.slice(0, 8).map((s, idx) => {
-                    const palette = ['#FF7B52','#0054A6','#8B5CF6','#10B981','#F59E0B','#EC4899','#14B8A6','#6366F1'];
-                    return { name: s.label, values: s.values, color: palette[idx % palette.length] };
-                  }),
-                  legend: true, height: 280
-                })
-            )
-            : h(EmptyState,{title:'Veri yok', desc:'Bu seviyede görüntülenecek veri bulunamadı.'}),
-          h('div',{className:'txt-3', style:{fontSize:11, marginTop:8}},
-            flowLevel === 'kat1' ? 'Tüm Kat 1 kategorileri · 2025' :
-            flowLevel === 'kat2' ? `Kat 2 (en çok aranan 12) ${flowFilterK1?'· '+flowFilterK1:''} · 2025` :
-            `Kat 3 (en çok aranan 12) ${flowFilterK1?'· '+flowFilterK1:''} · 2025`
-          )
-        ),
-        h('div',{className:'card'},
-          h('div',{className:'card-header',style:{flexWrap:'wrap',gap:8}},
-            h('h3',{style:{flex:1,minWidth:180}},'Sıralama Değişimi (2024→2025)',
-              h(InfoIcon,null,
-                h('strong',null,'Ne gösterir? '),'Kategorilerin toplam arama hacmi sıralamasının 2024 ile 2025 arasında nasıl değiştiği.',
-                h('br'),h('br'),h('strong',null,'Nasıl okunur? '),'Soldaki liste 2024 sıralaması, sağdaki 2025. Çizgi yukarı eğiliyorsa o kategori yükseldi, aşağıya eğiliyorsa düştü.',
-                h('br'),h('br'),h('strong',null,'Ne için? '),'"Kim kimi geçti" sorusuna doğrudan cevap verir.'
-              )
-            ),
-            h('div',{className:'segmented'},
-              h('button',{className:rankLevel==='kat1'?'active':'', onClick:()=>{setRankLevel('kat1'); setRankFilterK1('');}}, 'Kat 1'),
-              h('button',{className:rankLevel==='kat2'?'active':'', onClick:()=>setRankLevel('kat2')}, 'Kat 2'),
-              h('button',{className:rankLevel==='kat3'?'active':'', onClick:()=>setRankLevel('kat3')}, 'Kat 3')
-            ),
-            rankLevel !== 'kat1' && h('select',{className:'select', value:rankFilterK1, onChange:e=>setRankFilterK1(e.target.value)},
-              h('option',{value:''}, 'Tüm Kat 1'),
-              D.kat1Summary.map(k => h('option',{key:k.k1, value:k.k1}, k.k1))
-            )
-          ),
-          bumpItems.length > 0
-            ? h(BumpChart, {
-                items: bumpItems,
-                height: 280,
-                width: 420,
-                onClick: (it) => rankLevel === 'kat1' ? onNavigateCat(it.label) : onNavigateKw({k1: rankFilterK1 || null, k2: rankLevel==='kat2'?it.label:null, k3: rankLevel==='kat3'?it.label:null})
-              })
-            : h(EmptyState,{title:'Veri yok', desc:'Bu seviyede görüntülenecek veri bulunamadı.'})
-        )
-      );
-    })(),
 
       // YoY + Quarterly
       h('div',{className:'grid grid-2', style:{marginBottom:18}},
