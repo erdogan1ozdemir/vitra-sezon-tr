@@ -9,7 +9,7 @@
     "density": "comfortable"
   }/*EDITMODE-END*/;
 
-  // URL state helpers — tab + global filter hash içinde yaşar; paylaşılabilir link
+  // URL state helpers - tab + global filter hash içinde yaşar; paylaşılabilir link
   function readHashState() {
     try {
       const m = location.hash.match(/^#?v=([^&]+)/);
@@ -20,7 +20,7 @@
   function writeHashState(state) {
     const empty = !state.tab && state.k1.length === 0 && state.k2.length === 0 && state.k3.length === 0;
     if (empty) {
-      // Temiz hash — filtre yoksa URL de sade kalsın
+      // Temiz hash - filtre yoksa URL de sade kalsın
       if (location.hash) history.replaceState(null, '', location.pathname + location.search);
       return;
     }
@@ -32,14 +32,14 @@
   function App() {
     const D = window.DATA;
     const KAT1_COLORS = window.KAT1_COLORS || {};
-    // İlk açılışta URL hash'inden state'i oku — yoksa localStorage'a düş
+    // İlk açılışta URL hash'inden state'i oku - yoksa localStorage'a düş
     const initialHash = readHashState();
     const [tab, setTab] = React.useState(() => (initialHash && initialHash.tab) || localStorage.getItem('vitra.tab') || 'ozet');
     const [filter, setFilter] = React.useState({k1:null, k2:null});
     const [keywordInitFilter, setKeywordInitFilter] = React.useState(null);
     const [keywordModal, setKeywordModal] = React.useState(null);
 
-    // Global 3-level category filter (lifted from OzetTab — lives above tabs)
+    // Global 3-level category filter (lifted from OzetTab - lives above tabs)
     const [globalK1, setGlobalK1] = React.useState(() => (initialHash && initialHash.k1) || []);
     const [globalK2, setGlobalK2] = React.useState(() => (initialHash && initialHash.k2) || []);
     const [globalK3, setGlobalK3] = React.useState(() => (initialHash && initialHash.k3) || []);
@@ -76,12 +76,12 @@
       localStorage.setItem('vitra.tweaks', JSON.stringify(tweaks));
     }, [tweaks]);
 
-    // URL hash sync — tab ve global filtre her değişimde URL'ye yazılır (paylaşılabilir link)
+    // URL hash sync - tab ve global filtre her değişimde URL'ye yazılır (paylaşılabilir link)
     React.useEffect(() => {
       writeHashState({ tab, k1: globalK1, k2: globalK2, k3: globalK3 });
     }, [tab, globalK1, globalK2, globalK3]);
 
-    // Link kopyala — URL'yi clipboard'a kopyalar + "Kopyalandı" toast
+    // Link kopyala - URL'yi clipboard'a kopyalar + "Kopyalandı" toast
     const [linkCopied, setLinkCopied] = React.useState(false);
     const copyShareLink = async () => {
       try {
@@ -154,7 +154,7 @@
           )
         ),
         h('div',{className:'spacer'}),
-        // Controls + Inbound brand block — right side, controls LEFT of logo
+        // Controls + Inbound brand block - right side, controls LEFT of logo
         h('div',{className:'inbound-brand'},
           h('div',{className:'inbound-ctrls'},
             h('button',{
@@ -198,7 +198,7 @@
         }, t.label, t.badge && h('span',{className:'badge'}, t.badge)))
       ),
 
-      // Global category filter — sticky under tabs, visible across all tabs
+      // Global category filter - sticky under tabs, visible across all tabs
       h('div',{className:'global-filter-wrap'+(filterScrolled?' scrolled':'')},
         h('div',{className:'filter-panel'},
           h('div',{className:'filter-panel-label'},
@@ -296,7 +296,7 @@
         )
       ),
 
-      // Footer — Inbound logo bottom-left (clickable → Özet), scroll-top bottom-right
+      // Footer - Inbound logo bottom-left (clickable → Özet), scroll-top bottom-right
       h('button',{
         className:'footer-logo-left',
         onClick:()=>{ setTab('ozet'); window.scrollTo({top:0,behavior:'smooth'}); },

@@ -8,9 +8,9 @@ window.C = (function(){
   // and sits above sticky headers via high z-index. Used by all chart hovers.
   //
   // Props:
-  //   x, y        — viewport coords of the anchor (use getBoundingClientRect on the cell/point)
-  //   placement   — 'top' | 'bottom' | 'right' (default 'top'); auto-flips if it would clip
-  //   className   — wrapper class (default 'chart-tip')
+  //   x, y        - viewport coords of the anchor (use getBoundingClientRect on the cell/point)
+  //   placement   - 'top' | 'bottom' | 'right' (default 'top'); auto-flips if it would clip
+  //   className   - wrapper class (default 'chart-tip')
   function FloatingTooltip({ x, y, placement = 'top', offset = 10, className = 'chart-tip', children }) {
     const ref = React.useRef(null);
     React.useLayoutEffect(() => {
@@ -114,7 +114,7 @@ window.C = (function(){
     const [hover, setHover] = React.useState(null); // { ri, i, x, y, row, v, prev, yoy, isPeak }
     const hostRef = React.useRef(null);
     const grid = [];
-    // Corner — show year label if provided
+    // Corner - show year label if provided
     grid.push(h('div',{className:'hm-head hm-corner', key:'corner'},
       year != null && h('span',{className:'hm-year'}, year)
     ));
@@ -237,7 +237,7 @@ window.C = (function(){
     );
   }
 
-  // === Zoomable — chart'ı "Büyüt" butonu ile fullscreen modal'da açar.
+  // === Zoomable - chart'ı "Büyüt" butonu ile fullscreen modal'da açar.
   // Mobilde her chart'ın yanına genişletme butonu: tıklayınca modal açılır,
   // chart modal içinde belli ölçüde rescale edilir. Pinch-zoom da serbest.
   function Zoomable({title, children, aspect='wide'}) {
@@ -332,7 +332,7 @@ window.C = (function(){
         }),
         hoverI != null && h('line',{x1:xs[hoverI], x2:xs[hoverI], y1:pad.t, y2:pad.t+ch, stroke:'var(--ink-3)', strokeDasharray:'3 3'})
       ),
-      // Tooltip panel — portal to body so it escapes chart clipping and sticky headers
+      // Tooltip panel - portal to body so it escapes chart clipping and sticky headers
       hoverI != null && (() => {
         const r = svgRef.current?.getBoundingClientRect();
         if (!r) return null;
@@ -538,7 +538,7 @@ window.C = (function(){
     );
   }
 
-  // MultiSelect — dropdown with checkboxes for multi-category selection
+  // MultiSelect - dropdown with checkboxes for multi-category selection
   function MultiSelect({label, options, selected, onChange, colorMap, maxDisplay=2, width=180}) {
     const [open, setOpen] = React.useState(false);
     const ref = React.useRef(null);
@@ -603,7 +603,7 @@ window.C = (function(){
   }
 
   // ======== Small Multiples Grid ========
-  // Grid of mini line/bar charts — one per category, all on same y-scale optional
+  // Grid of mini line/bar charts - one per category, all on same y-scale optional
   // items: [{label, color, values, sub}]
   function SmallMultiples({ items, height=56, monthsLabels=TR_MONTHS, yScale='shared', onClick }) {
     const globalMax = yScale === 'shared' ? Math.max(1, ...items.flatMap(it => it.values)) : null;
@@ -914,7 +914,7 @@ window.C = (function(){
   }
 
   // ======== Stream Graph (stacked area, centered) ========
-  // series: [{label, color, values}] — 12 monthly values each
+  // series: [{label, color, values}] - 12 monthly values each
   function StreamGraph({ series, height=260, width=720, monthsLabels=TR_MONTHS }) {
     if (!series || !series.length) return null;
     const n = series[0].values.length;
@@ -925,11 +925,11 @@ window.C = (function(){
     const totals = Array.from({length:n}, (_,i) => series.reduce((s, ser) => s + (ser.values[i] || 0), 0));
     const maxTotal = Math.max(...totals) || 1;
 
-    // For each month, compute stacked positions (centered baseline — stream layout)
+    // For each month, compute stacked positions (centered baseline - stream layout)
     // Offset each month so that series are stacked symmetrically around the middle
     const positions = series.map(() => Array(n).fill({ y0: 0, y1: 0 }));
     for (let i = 0; i < n; i++) {
-      // Sort by value descending for this month? No — keep consistent order for smooth bands
+      // Sort by value descending for this month? No - keep consistent order for smooth bands
       let cumul = 0;
       const monthTotal = totals[i];
       const monthH = (monthTotal / maxTotal) * innerH;

@@ -254,7 +254,7 @@ h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 .card-title-row { padding: 18px 20px 12px; border-bottom: 1px solid var(--line); }
 .card-body { padding: 18px 20px; }
 
-/* KPI cards — centered, compact */
+/* KPI cards - centered, compact */
 .kpi {
   background: var(--bg-card);
   border: 1px solid var(--line);
@@ -475,7 +475,7 @@ h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 .toolbar .select { font-size: 12px; padding: 5px 9px; background: var(--bg); }
 .toolbar .chip-btn { font-size: 11px; padding: 5px 10px; }
 
-/* Filter panel — global Özet filter above KPIs */
+/* Filter panel - global Özet filter above KPIs */
 .filter-panel {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   background: linear-gradient(135deg, rgba(255,123,82,.06), rgba(0,84,166,.04));
@@ -491,7 +491,7 @@ h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 }
 .filter-panel-label strong { font-family: 'Bricolage Grotesque'; font-weight: 600; }
 
-/* Sticky global filter bar — placed between tabs and content */
+/* Sticky global filter bar - placed between tabs and content */
 .global-filter-wrap {
   position: sticky;
   top: 113px; /* tabs are at 67px + their own height ~46px */
@@ -844,7 +844,7 @@ tr.row-hl { background: var(--accent-wash) !important; }
   display: inline-flex; align-items: center;
 }
 
-/* Aksiyon kartları (B1) — peak-based takvim + fırsat/risk çağrısı */
+/* Aksiyon kartları (B1) - peak-based takvim + fırsat/risk çağrısı */
 .action-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -1177,7 +1177,7 @@ button.action-card:hover { border-color: currentColor; transform: translateY(-1p
   .tbl-kat-detay th, .tbl-kat-detay td { padding: 6px 5px; }
 }
 
-/* Mobile squeeze — ekrana daha iyi oturan kartlar, daha rahat punto */
+/* Mobile squeeze - ekrana daha iyi oturan kartlar, daha rahat punto */
 @media (max-width: 640px) {
   .content { padding: 10px 8px 28px; }
   /* Card'lar kenara daha yakın; daha az kilitlenme */
@@ -1229,7 +1229,7 @@ button.action-card:hover { border-color: currentColor; transform: translateY(-1p
   .zoom-btn { width: 28px; height: 28px; }
 }
 
-/* Çok dar (≤400) — pişmanlık azaltıcı squeeze */
+/* Çok dar (≤400) - pişmanlık azaltıcı squeeze */
 @media (max-width: 400px) {
   .content { padding: 8px 6px 24px; }
   .card { padding: 10px 8px; border-radius: 10px; }

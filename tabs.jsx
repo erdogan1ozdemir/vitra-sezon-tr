@@ -5,7 +5,7 @@ window.TABS = (function(){
   const h = React.createElement;
   const D = window.DATA;
 
-  // ===== Icon helpers (emoji'ler yerine) — stroke SVG, currentColor ile renklenir =====
+  // ===== Icon helpers (emoji'ler yerine) - stroke SVG, currentColor ile renklenir =====
   const Svg = (size, children) => h('svg', {
     width: size, height: size, viewBox: '0 0 24 24',
     fill: 'none', stroke: 'currentColor',
@@ -119,7 +119,7 @@ window.TABS = (function(){
     const [yoyLevel, setYoyLevel] = React.useState('kat1');
     const [yoyFilter, setYoyFilter] = React.useState({k1:'', k2:''});
 
-    // Global filter from props (lifted to app.jsx — panel now sits under the tabs)
+    // Global filter from props (lifted to app.jsx - panel now sits under the tabs)
     const {globalK1, globalK2, globalK3, setGlobalK1, setGlobalK2, setGlobalK3, hasGlobalFilter} = globalFilter;
 
     const g_k1Set = globalK1.length ? new Set(globalK1) : null;
@@ -162,7 +162,7 @@ window.TABS = (function(){
     const topGainers = [...contributors].sort((a,b) => b.delta - a.delta).slice(0, 5);
     const topLosers = [...contributors].sort((a,b) => a.delta - b.delta).slice(0, 5);
 
-    // Donut data — global filter derinliğine göre drill-down:
+    // Donut data - global filter derinliğine göre drill-down:
     //   hiç filtre yok            → Kat 1 pay dağılımı
     //   sadece K1 seçili          → Kat 2 alt kırılımı (seçili K1'ler içinde)
     //   K2 seçili                 → Kat 3 alt kırılımı (seçili K2'ler içinde)
@@ -386,7 +386,7 @@ window.TABS = (function(){
           hasGlobalFilter ? `Seçili filtrede toplam arama 2024'e kıyasla ` : `2024'e kıyasla toplam arama `,
           h('strong',null, fmtPct(f_TOTAL_YOY)),
           `. Pazar `, (f_TOTAL_YOY<0?'erimekte':'büyümekte'), ` olarak görünüyor. `,
-          h('strong',null, fmtFull(risingCnt)), ` keyword yükselişte — içerik yatırımı ve güncelleme fırsatı olarak değerlendirilebilir. Peak dönem: `,
+          h('strong',null, fmtFull(risingCnt)), ` keyword yükselişte - içerik yatırımı ve güncelleme fırsatı olarak değerlendirilebilir. Peak dönem: `,
           h('strong',null, TR_MONTHS_LONG[f_PEAK_IDX]), `.`
         )
       ),
@@ -431,7 +431,7 @@ window.TABS = (function(){
               h('div',{className:'action-title'}, 'Risk taraması'),
               h('div',{className:'action-text'},
                 h('strong',null, fmtFull(fallingCnt)),
-                ' keyword erozyonda. Rakip analizi + içerik yenileme adaylarını incele →'
+                " keyword'de arama hacmi düşüş eğilimi gösteriyor. İlgili kelimeleri incele →"
               )
             )
           )
@@ -577,7 +577,7 @@ window.TABS = (function(){
           h('h3',{style:{flex:1,minWidth:180}},'Kategori Sezon Takvimi',
             h(InfoIcon,null,
               h('strong',null,'Ne gösterir? '),'Her satır bir kategori, sütunlar aylar. Üst değer o ayın 2025 arama hacmi, alt rozet ise 2024\'e kıyasla % değişim (YoY).',
-              h('br'),h('br'),h('strong',null,'Renk skalası: '),'Satır içinde normalize edilir — ',h('span',{style:{color:'#e67c73',fontWeight:600}},'kırmızı'),' = o satırın dibi, ',h('span',{style:{color:'#fbbc04',fontWeight:600}},'sarı'),' = orta, ',h('span',{style:{color:'#57bb8a',fontWeight:600}},'yeşil'),' = peak ay.',
+              h('br'),h('br'),h('strong',null,'Renk skalası: '),'Satır içinde normalize edilir - ',h('span',{style:{color:'#e67c73',fontWeight:600}},'kırmızı'),' = o satırın dibi, ',h('span',{style:{color:'#fbbc04',fontWeight:600}},'sarı'),' = orta, ',h('span',{style:{color:'#57bb8a',fontWeight:600}},'yeşil'),' = peak ay.',
               h('br'),h('br'),h('strong',null,'YoY rozeti: '), h('span',{style:{color:'#065F46',fontWeight:600}},'Yeşil +%'),' 2024\'ten büyüdü, ', h('span',{style:{color:'#991B1B',fontWeight:600}},'kırmızı -%'),' daraldı.',
               h('br'),h('br'),h('strong',null,'Nasıl okunur? '),'Yeşil renk o ay o kategorinin peak dönemi demektir. Hücreye tıklandığında o kategori drill-down olur.',
               h('br'),h('br'),h('strong',null,'Ne için? '),'SEO & pazarlama takvimi kategoriye özel olarak bu ritim dikkate alınarak kurgulanabilir; peak\'ten 4-6 hafta önce içeriğin yayında olması hedeflenebilir.'
@@ -824,7 +824,7 @@ window.TABS = (function(){
   // === Kategoriler Tab ===
   function KategorilerTab({filter, setFilter, onNavigateKw}) {
     const [level, setLevel] = React.useState('kat1');
-    // Multi-selects — independent per level
+    // Multi-selects - independent per level
     const [multiK1, setMultiK1] = React.useState(() => filter.k1 ? [filter.k1] : []);
     const [multiK2, setMultiK2] = React.useState(() => filter.k2 ? [filter.k2] : []);
     const [multiK3, setMultiK3] = React.useState([]);
@@ -863,7 +863,7 @@ window.TABS = (function(){
     });
     const sorted = [...scoped].sort((a,b) => b.a25 - a.a25);
 
-    // Line chart data — filtered by whatever is selected
+    // Line chart data - filtered by whatever is selected
     const lineKeywords = React.useMemo(() => {
       return D.keywords.filter(k => {
         if (activeK1Set && !activeK1Set.has(k.k1)) return false;
@@ -1039,7 +1039,7 @@ window.TABS = (function(){
           'Renk: ', h('span',{style:{color:'#e67c73'}},'kırmızı (dip) '), '& ',
           h('span',{style:{color:'#fbbc04'}},'sarı (orta) '), '& ',
           h('span',{style:{color:'#57bb8a'}},'yeşil (peak)'), '.',
-          sorted.length > 15 && h('span',{style:{marginLeft:8}}, ` · Toplam ${sorted.length} kategori — kart içinde dikey kaydırılabilir.`)
+          sorted.length > 15 && h('span',{style:{marginLeft:8}}, ` · Toplam ${sorted.length} kategori - kart içinde dikey kaydırılabilir.`)
         )
       ),
 
@@ -1337,7 +1337,7 @@ window.TABS = (function(){
     const safeLimit = Math.min(limit, activeRows.length);
     const top = activeRows.slice(0, safeLimit);
 
-    // Seasonality type counts — filtered by category filter
+    // Seasonality type counts - filtered by category filter
     const typeRows = React.useMemo(() => {
       const typeCount = {};
       for (const k of filteredKws) {
@@ -1462,11 +1462,11 @@ window.TABS = (function(){
       })(),
 
       // === Yıldız Yükselişler (B3) ===
-      // Filtrelenen evrende YoY >= 100% (2x) olan outlier'lar — olağanüstü
+      // Filtrelenen evrende YoY >= 100% (2x) olan outlier'lar - olağanüstü
       // büyüyen keyword'ler için dikkat çeken compact strip.
       (() => {
         const stars = filteredKws
-          .filter(k => k.yoy >= 1.0 && (k.a25 || 0) >= 100)  // min hacim 100/ay — gürültüyü keser
+          .filter(k => k.yoy >= 1.0 && (k.a25 || 0) >= 100)  // min hacim 100/ay - gürültüyü keser
           .sort((a, b) => b.yoy - a.yoy)
           .slice(0, 8);
         if (stars.length === 0) return null;
@@ -1479,7 +1479,7 @@ window.TABS = (function(){
                 h('h3',{style:{margin:0}},'Yıldız Yükselişler',
                   h(InfoIcon,null,
                     h('strong',null,'Ne gösterir? '),'Filtrelenen keyword evreninde YoY ≥ %100 (yani 2 katı büyümüş) ve aylık ortalama ≥ 100 arama olan outlier\'lar.',
-                    h('br'),h('br'),h('strong',null,'Ne için? '),'"Birden patlayan" sorguları öne çıkarır. Pazarda oluşan yeni bir ihtiyaç ya da kampanya/ürün dalgasına işaret edebilir — içerik stratejisi için hızlı fırsat kanalı.'
+                    h('br'),h('br'),h('strong',null,'Ne için? '),'"Birden patlayan" sorguları öne çıkarır. Pazarda oluşan yeni bir ihtiyaç ya da kampanya/ürün dalgasına işaret edebilir - içerik stratejisi için hızlı fırsat kanalı.'
                   )
                 ),
                 h('div',{className:'txt-3', style:{fontSize:11, marginTop:2}}, stars.length, ' outlier · en yüksek ', h('strong',{style:{color:'var(--coral-deep)'}}, '+', fmtPct(topYoY, 0).replace('+','')))
@@ -1565,7 +1565,7 @@ window.TABS = (function(){
               h(InfoIcon,null,
                 h('strong',null,'Evergreen'),': yıl boyu sabit hacim.',h('br'),
                 h('strong',null,'Orta'),': peak var ancak taban hacim yüksek.',h('br'),
-                h('strong',null,'Yüksek'),': keskin peak/dip — zamanlama kritik; kampanyanın peak ayına 4-6 hafta önceden hazırlanması önerilebilir.',h('br'),h('br'),
+                h('strong',null,'Yüksek'),': keskin peak/dip - zamanlama kritik; kampanyanın peak ayına 4-6 hafta önceden hazırlanması önerilebilir.',h('br'),h('br'),
                 h('strong',null,'Not: '),'Dağılım üstteki filtrelere göre güncellenir.'
               )
             )),
@@ -1610,7 +1610,7 @@ window.TABS = (function(){
             h(InfoIcon,null,
               h('strong',null,'Ne gösterir? '),'Her kategorideki keywordlerin kaçı yükseliyor / stabil / düşüyor.',h('br'),h('br'),
               h('strong',null,'Nasıl okunur? '),h('span',{style:{color:'#2E7D32',fontWeight:600}},'Yeşil'),' = yükselen, gri = stabil, ',h('span',{style:{color:'#D32F2F',fontWeight:600}},'kırmızı'),' = düşen. Renkli segmente tıklanarak o kategorideki o trenddeki keywordlere filtreli şekilde inilebilir.',h('br'),h('br'),
-              h('strong',null,'Ne için? '),'Hangi kategoride momentum, hangisinde erozyon olduğunu görmek ve yatırım yönünü değerlendirmek için kullanılabilir.'
+              h('strong',null,'Ne için? '),'Hangi kategoride momentum var, hangisinde düşüş eğilimi görüldüğünü tespit etmek ve yatırım yönünü değerlendirmek için kullanılabilir.'
             )
           ),
           h('div',{className:'segmented'},
