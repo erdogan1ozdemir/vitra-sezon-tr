@@ -627,7 +627,7 @@ window.TABS = (function(){
       ),
 
       // ==== Small multiples + Polar peak ====
-      h('div',{className:'grid', style:{gridTemplateColumns:'1fr 340px', gap:18, marginBottom:18}},
+      h('div',{className:'grid grid-karne-saat', style:{gridTemplateColumns:'1fr 340px', gap:18, marginBottom:18}},
         h('div',{className:'card'},
           h('div',{className:'card-header'},
             h('h3',null,'Kategori Karnesi · 8 Kat 1 Bir Arada',
@@ -652,7 +652,7 @@ window.TABS = (function(){
         ),
         h('div',{className:'card'},
           h('div',{className:'card-header'},
-            h('h3',null,'Aylık Saat',
+            h('h3',null,'Aylık Hacim Dağılım Grafiği',
               h(InfoIcon,null,
                 h('strong',null,'Ne gösterir? '),'12 ayı bir saat kadranı gibi gösterir; her dilimin uzunluğu o ayın arama hacmine göredir.',
                 h('br'),h('br'),h('strong',null,'Nasıl okunur? '),'En uzun dilim peak aydır. Üzerine gelindiğinde merkez o ayın hacmini gösterir.',
@@ -1046,16 +1046,16 @@ window.TABS = (function(){
       h('div',{className:'card flush'},
         h('div',{className:'card-title-row'}, h('h3',null,'Kategori Detayları')),
         h('div',{className:'tbl-wrap'},
-          h('table',{className:'tbl'},
+          h('table',{className:'tbl tbl-kat-detay'},
             h('thead',null,
               h('tr',null,
                 h('th',null,'Kategori'),
-                h('th',{className:'num'}, '2024'),
+                h('th',{className:'num col-hide-sm'}, '2024'),
                 h('th',{className:'num'}, '2025'),
                 h('th',{className:'num'}, 'YoY'),
-                h('th',null,'12 Ay Trend'),
-                h('th',null,'Peak Ç.'),
-                h('th',null,'En yüksek ay')
+                h('th',{className:'col-hide-sm'},'12 Ay Trend'),
+                h('th',{className:'col-hide-sm'},'Peak Ç.'),
+                h('th',{className:'col-hide-sm'},'En yüksek ay')
               )
             ),
             h('tbody',null,
@@ -1070,18 +1070,23 @@ window.TABS = (function(){
                   h('td',null,
                     h('div',{style:{display:'flex',alignItems:'center',gap:8}},
                       h('div',{style:{width:10,height:10,borderRadius:2,background:katColor(r.labels[0]), flexShrink:0}}),
-                      h('div',null,
+                      h('div',{style:{minWidth:0}},
                         h('div',{className:'kw-cell'}, r.labels.slice(-1)[0]),
-                        level!=='kat1' && h('div',{className:'cat-cell'}, r.labels.slice(0,-1).join(' > '))
+                        level!=='kat1' && h('div',{className:'cat-cell'}, r.labels.slice(0,-1).join(' > ')),
+                        // Mobilde gizlenmiş metrikler buraya meta-satır olarak düşer
+                        h('div',{className:'kw-mobile-meta'},
+                          h('span',null, fmtNum(r.m25[peakIdx]), ' · ', TR_MONTHS[peakIdx]),
+                          peakQIdx>=0 && h('span',{className:'pill q'+(peakQIdx+1), style:{fontSize:9, padding:'1px 5px', marginLeft:6}}, 'Q'+(peakQIdx+1))
+                        )
                       )
                     )
                   ),
-                  h('td',{className:'num'}, fmtFull(r.a24)),
+                  h('td',{className:'num col-hide-sm'}, fmtFull(r.a24)),
                   h('td',{className:'num'}, fmtFull(r.a25)),
                   h('td',{className:'num'}, h(YoYPill,{yoy:r.yoy})),
-                  h('td',{style:{width:110}}, h(Sparkline,{values:r.m25, w:100, h:28})),
-                  h('td',null, peakQIdx>=0 ? h('span',{className:'pill q'+(peakQIdx+1)}, 'Q'+(peakQIdx+1)) : '-'),
-                  h('td',{style:{fontSize:12,color:'var(--ink-2)'}}, TR_MONTHS[peakIdx]+' · '+fmtNum(r.m25[peakIdx]))
+                  h('td',{className:'col-hide-sm', style:{width:110}}, h(Sparkline,{values:r.m25, w:100, h:28})),
+                  h('td',{className:'col-hide-sm'}, peakQIdx>=0 ? h('span',{className:'pill q'+(peakQIdx+1)}, 'Q'+(peakQIdx+1)) : '-'),
+                  h('td',{className:'col-hide-sm', style:{fontSize:12,color:'var(--ink-2)'}}, TR_MONTHS[peakIdx]+' · '+fmtNum(r.m25[peakIdx]))
                 );
               })
             )

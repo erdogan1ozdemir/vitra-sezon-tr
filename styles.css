@@ -1155,6 +1155,28 @@ button.action-card:hover { border-color: currentColor; transform: translateY(-1p
   .heatmap .hm-cell.peak::after { width: 3px; height: 3px; top: 2px; right: 2px; }
 }
 
+/* Mobile layout utils */
+.kw-mobile-meta { display: none; }
+@media (max-width: 640px) {
+  /* Kategori Karnesi + Aylık Hacim Dağılım: yan yana sığmıyor, alt alta */
+  .grid-karne-saat { grid-template-columns: 1fr !important; }
+
+  /* Kategori Detayları tablosu: 7 kolon mobile'a sığmıyor;
+     non-essential'ları gizle, peak/quarter bilgisini kategori hücresine meta olarak koy */
+  .tbl-kat-detay .col-hide-sm { display: none; }
+  .tbl-kat-detay { table-layout: auto; }
+  .tbl-kat-detay .kw-mobile-meta {
+    display: block !important;
+    font-size: 10px; color: var(--ink-3);
+    margin-top: 3px; line-height: 1.4;
+    white-space: nowrap;
+  }
+  .tbl-kat-detay .kw-mobile-meta .pill { vertical-align: middle; }
+  .tbl-kat-detay .kw-cell { font-size: 12px; white-space: normal; }
+  .tbl-kat-detay .cat-cell { font-size: 10px; }
+  .tbl-kat-detay th, .tbl-kat-detay td { padding: 6px 5px; }
+}
+
 /* Mobile squeeze — ekrana daha iyi oturan kartlar, daha rahat punto */
 @media (max-width: 640px) {
   .content { padding: 10px 8px 28px; }
