@@ -4,6 +4,9 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+// Railway container networking `0.0.0.0` host'una bind gerektiriyor;
+// default IPv6 localhost bind'i healthcheck'i düşürür.
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Serve all project files as static
 app.use(express.static(__dirname, {
@@ -23,6 +26,6 @@ app.get('/', (req, res) => {
 // Healthcheck for Railway
 app.get('/health', (req, res) => res.json({ ok: true }));
 
-app.listen(PORT, () => {
-  console.log(`[VitrA Dashboard] serving on port ${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`[VitrA Dashboard] serving on ${HOST}:${PORT}`);
 });
