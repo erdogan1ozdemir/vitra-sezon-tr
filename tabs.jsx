@@ -468,13 +468,13 @@ window.TABS = (function(){
               })
             )
           ),
-          h('div',{style:{flex:1, display:'flex', alignItems:'center', justifyContent:'center', minHeight:420, width:'100%'}},
+          h('div',{style:{flex:1, display:'flex', alignItems:'center', justifyContent:'center', minHeight:320, width:'100%'}},
             h('div',{style:{width:'100%'}},
               h(LineChart,{
                 series:[
                   {name:'2024', values:f_MONTHLY_24, color:'#8A8A8A'},
                   {name:'2025', values:f_MONTHLY_25, color:'#FF7B52', peakIdx:f_PEAK_IDX}
-                ], legend:true, height:400
+                ], legend:true, height:300
               })
             )
           )
