@@ -157,7 +157,8 @@ window.TABS = (function(){
       if (heatLevel === 'kat1') rows = D.kat1Monthly;
       else if (heatLevel === 'kat2') rows = D.kat2Monthly.filter(r => !heatFilter.k1 || r.labels[0] === heatFilter.k1);
       else rows = D.kat3Monthly.filter(r => (!heatFilter.k1 || r.labels[0] === heatFilter.k1) && (!heatFilter.k2 || r.labels[1] === heatFilter.k2));
-      return rows.slice(0, 20).map(r => {
+      // Tüm satırlar gösterilir; kart içi dikey scroll container (aşağıda) uzun listeyi taşıyor
+      return rows.map(r => {
         const peakIdx = r.m25.indexOf(Math.max(...r.m25));
         return {
           label: heatLevel==='kat1' ? r.labels[0] : r.labels.slice(-1)[0],
@@ -420,7 +421,7 @@ window.TABS = (function(){
             kat2InK1(heatFilter.k1).map(k => h('option',{key:k, value:k}, k))
           )
         ),
-        h('div',{style:{overflow:'auto'}},
+        h('div',{className:'heatmap-scroll', style:{overflow:'auto', maxHeight: heatLevel === 'kat1' ? 'none' : 560}},
           h('div',{style:{minWidth:720}},
             heatRows.length > 0 ? h(Heatmap,{rows:heatRows, year:2025, showYoY:true, onClickCell:(r,i)=>{
               if (r.ctx.k3) onNavigateKw({k1:r.ctx.k1, k2:r.ctx.k2, k3:r.ctx.k3});
@@ -837,10 +838,10 @@ window.TABS = (function(){
           ),
           h('div',{className:'hint'}, `${sorted.length} kategori`)
         ),
-        h('div',{style:{overflow:'auto'}},
+        h('div',{className:'heatmap-scroll', style:{overflow:'auto', maxHeight: level === 'kat1' ? 'none' : 600}},
           h('div',{style:{minWidth:720}},
             sorted.length > 0 ? h(Heatmap,{
-              rows: sorted.slice(0, 30).map(r => {
+              rows: sorted.map(r => {
                 const peakIdx = r.m25.indexOf(Math.max(...r.m25));
                 return {
                   label: level==='kat1' ? r.labels[0] : r.labels.slice(-1)[0],
@@ -857,7 +858,7 @@ window.TABS = (function(){
           'Renk: ', h('span',{style:{color:'#e67c73'}},'kırmızı (dip) '), '& ',
           h('span',{style:{color:'#fbbc04'}},'sarı (orta) '), '& ',
           h('span',{style:{color:'#57bb8a'}},'yeşil (peak)'), '.',
-          sorted.length > 30 && h('span',{style:{marginLeft:8}}, ` · İlk 30 / ${sorted.length} gösteriliyor — daha dar filtre kullanılabilir veya aşağıdaki tabloya bakılabilir.`)
+          sorted.length > 15 && h('span',{style:{marginLeft:8}}, ` · Toplam ${sorted.length} kategori — kart içinde dikey kaydırılabilir.`)
         )
       ),
 
