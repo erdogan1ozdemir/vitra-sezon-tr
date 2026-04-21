@@ -237,6 +237,40 @@ window.C = (function(){
     );
   }
 
+  // === Zoomable — chart'ı "Büyüt" butonu ile fullscreen modal'da açar.
+  // Mobilde her chart'ın yanına genişletme butonu: tıklayınca modal açılır,
+  // chart modal içinde belli ölçüde rescale edilir. Pinch-zoom da serbest.
+  function Zoomable({title, children, aspect='wide'}) {
+    const [open, setOpen] = React.useState(false);
+    return h(React.Fragment, null,
+      h('button',{
+        className:'zoom-btn',
+        onClick: () => setOpen(true),
+        title: 'Büyüt / odakla',
+        'aria-label': 'Büyüt'
+      },
+        h('svg',{width:14, height:14, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:2, strokeLinecap:'round', strokeLinejoin:'round'},
+          h('path',{d:'M15 3h6v6'}),
+          h('path',{d:'M9 21H3v-6'}),
+          h('path',{d:'M21 3l-7 7'}),
+          h('path',{d:'M3 21l7-7'})
+        )
+      ),
+      open && ReactDOM.createPortal(
+        h('div',{className:'zoom-overlay', onClick: e => e.target === e.currentTarget && setOpen(false)},
+          h('div',{className:'zoom-content zoom-' + aspect},
+            h('div',{className:'zoom-head'},
+              h('div',{className:'zoom-title'}, title || 'Grafik'),
+              h('button',{className:'zoom-close', onClick:()=>setOpen(false), 'aria-label':'Kapat'}, '×')
+            ),
+            h('div',{className:'zoom-body'}, children)
+          )
+        ),
+        document.body
+      )
+    );
+  }
+
   // === LineChart with crosshair tooltip ===
   function LineChart({series, height=220, labels=TR_MONTHS, yFormat=fmtNum, legend}) {
     const [hoverI, setHoverI] = React.useState(null);
@@ -963,5 +997,5 @@ window.C = (function(){
     );
   }
 
-  return { Kpi, YoYPill, Sparkline, Heatmap, ShareBars, QStack, Modal, LineChart, BarChart, Donut, InfoIcon, Explainer, MultiSelect, SectionHeader, SmallMultiples, PolarPeak, EmptyState, Skeleton, ChartActions, BumpChart, StreamGraph };
+  return { Kpi, YoYPill, Sparkline, Heatmap, ShareBars, QStack, Modal, LineChart, BarChart, Donut, InfoIcon, Explainer, MultiSelect, SectionHeader, SmallMultiples, PolarPeak, EmptyState, Skeleton, ChartActions, BumpChart, StreamGraph, Zoomable };
 })();

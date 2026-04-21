@@ -1,7 +1,7 @@
 // Tab implementations
 window.TABS = (function(){
   const { fmtNum, fmtFull, fmtPct, TR_MONTHS, TR_MONTHS_LONG, serialToMonthIdx, aggregateMonthly, trendClass, toCSV, downloadCSV } = U;
-  const { Kpi, YoYPill, Sparkline, Heatmap, ShareBars, QStack, Modal, LineChart, BarChart, Donut, InfoIcon, Explainer, SectionHeader, SmallMultiples, PolarPeak, EmptyState, Skeleton, ChartActions, BumpChart, StreamGraph } = C;
+  const { Kpi, YoYPill, Sparkline, Heatmap, ShareBars, QStack, Modal, LineChart, BarChart, Donut, InfoIcon, Explainer, SectionHeader, SmallMultiples, PolarPeak, EmptyState, Skeleton, ChartActions, BumpChart, StreamGraph, Zoomable } = C;
   const h = React.createElement;
   const D = window.DATA;
 
@@ -449,7 +449,7 @@ window.TABS = (function(){
         desc:'12 aylık arama hacmi trendi ve pazar payının kategorilere dağılımı.'
       }),
       h('div',{className:'grid grid-main', style:{marginBottom:18, alignItems:'stretch'}},
-        h('div',{className:'card', style:{display:'flex', flexDirection:'column'}},
+        h('div',{className:'card', style:{display:'flex', flexDirection:'column', position:'relative'}},
           h('div',{className:'card-header'},
             h('h3',null,'12 Aylık Toplam Arama Hacmi',
               h(InfoIcon,null,
@@ -458,7 +458,15 @@ window.TABS = (function(){
                 h('br'),h('br'),h('strong',null,'Ne için kullanılır? '),'Genel pazar ritmini ve yıllık karşılaştırmayı görmek için kullanılabilir. Peak aydan 4-6 hafta önce içeriğin hazır olması planlanabilir.'
               )
             ),
-            h('div',{className:'hint'}, hasGlobalFilter ? `${globalK1.length} kat. · 2024 & 2025` : '2024 (gri) & 2025 (coral)')
+            h('div',{className:'hint'}, hasGlobalFilter ? `${globalK1.length} kat. · 2024 & 2025` : '2024 (gri) & 2025 (coral)'),
+            h(Zoomable, {title:'12 Aylık Toplam Arama Hacmi', aspect:'wide'},
+              h(LineChart,{
+                series:[
+                  {name:'2024', values:f_MONTHLY_24, color:'#8A8A8A'},
+                  {name:'2025', values:f_MONTHLY_25, color:'#FF7B52', peakIdx:f_PEAK_IDX}
+                ], legend:true, height:520
+              })
+            )
           ),
           h('div',{style:{flex:1, display:'flex', alignItems:'center', justifyContent:'center', minHeight:420, width:'100%'}},
             h('div',{style:{width:'100%'}},
@@ -587,6 +595,11 @@ window.TABS = (function(){
           heatLevel === 'kat3' && h('select',{className:'select', value:heatFilter.k2, onChange:e=>setHeatFilter({...heatFilter, k2:e.target.value})},
             h('option',{value:''}, 'Tüm Kat 2'),
             kat2InK1(heatFilter.k1).map(k => h('option',{key:k, value:k}, k))
+          ),
+          heatRows.length > 0 && h(Zoomable, {title:'Kategori Sezon Takvimi', aspect:'wide'},
+            h('div',{style:{minWidth:720}},
+              h(Heatmap,{rows:heatRows, year:2025, showYoY:true})
+            )
           )
         ),
         h('div',{className:'heatmap-scroll', style:{overflow:'auto', maxHeight: heatLevel === 'kat1' ? 'none' : 560}},

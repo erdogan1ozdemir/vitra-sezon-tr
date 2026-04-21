@@ -1155,6 +1155,71 @@ button.action-card:hover { border-color: currentColor; transform: translateY(-1p
   .heatmap .hm-cell.peak::after { width: 3px; height: 3px; top: 2px; right: 2px; }
 }
 
+/* Mobile squeeze — ekrana daha iyi oturan kartlar, daha rahat punto */
+@media (max-width: 640px) {
+  .content { padding: 10px 8px 28px; }
+  /* Card'lar kenara daha yakın; daha az kilitlenme */
+  .card { padding: 12px 10px; border-radius: 12px; }
+  .card-header { margin-bottom: 8px; gap: 6px; }
+  .card-title-row { padding: 10px 12px; }
+  /* KPI grid daha sıkı */
+  .grid-kpi { gap: 6px !important; }
+  .kpi-mini { padding: 10px 8px 8px; }
+  .kpi-mini .km-value { font-size: 18px; }
+  .kpi-mini .km-label { font-size: 9px; }
+  .kpi-mini .km-sub { font-size: 9.5px; }
+  /* Hero KPI mobilde kompakt ama hala dramatik */
+  .hero-kpi { padding: 18px 16px; gap: 14px; }
+  .hero-kpi .hk-value { font-size: clamp(40px, 12vw, 56px) !important; line-height: .92; }
+  .hero-kpi .hk-peak { font-size: 22px; }
+  /* Insight & Action strip kompakt */
+  .insight-strip { padding: 10px 12px; font-size: 11.5px; gap: 8px; }
+  .action-strip { gap: 8px; margin: 10px 0 14px; }
+  .action-card { padding: 10px 12px; gap: 10px; }
+  .action-card .action-icon { width: 32px; height: 32px; }
+  .action-card .action-title { font-size: 12.5px; }
+  .action-card .action-text { font-size: 11.5px; line-height: 1.45; }
+  /* Hero sparkline mobilde yüksek, yorumlanabilir */
+  .hero-kpi .hk-spark { height: 100px; min-width: 0; }
+  /* Stars (yıldız yükselişler) mobilde tek kolon, daha rahat */
+  .stars-grid { grid-template-columns: 1fr; gap: 8px; }
+  .star-item { padding: 8px 10px; }
+  .star-kw { font-size: 12.5px; }
+  /* SectionHeader daha kompakt */
+  .section-header { padding: 10px 8px 4px; gap: 10px; }
+  .section-header .sh-icon { width: 30px; height: 30px; }
+  .section-header .sh-title { font-size: 15px; }
+  .section-header .sh-desc { font-size: 11px; }
+  /* Explainer mobilde daha sade */
+  .explainer-head { padding: 10px 12px; gap: 10px; }
+  .explainer-head .explainer-icon { width: 30px; height: 30px; }
+  .explainer-head .main-title { font-size: 13.5px; }
+  .explainer-head .sub-title { font-size: 11px; }
+  .explainer-body { padding: 12px 14px 14px; font-size: 12px; }
+  .explainer-grid { gap: 12px; }
+  /* Tablolar mobile'da kompakt */
+  .tbl { font-size: 11.5px; }
+  .tbl th, .tbl td { padding: 6px 6px; }
+  .tbl-wrap { max-height: 420px; }
+  /* Chart-wrap heights azaltılmış */
+  .chart-wrap { max-width: 100%; }
+  /* Zoom butonu daima görünür */
+  .zoom-btn { width: 28px; height: 28px; }
+}
+
+/* Çok dar (≤400) — pişmanlık azaltıcı squeeze */
+@media (max-width: 400px) {
+  .content { padding: 8px 6px 24px; }
+  .card { padding: 10px 8px; border-radius: 10px; }
+  .hero-kpi { padding: 14px 12px; }
+  .hero-kpi .hk-value { font-size: clamp(34px, 13vw, 48px) !important; }
+  .action-card { padding: 8px 10px; }
+  .action-card .action-icon { width: 28px; height: 28px; }
+  .topbar { padding: 8px 10px; }
+  .topbar .logo img { height: 20px !important; margin-right: 6px !important; }
+  .topbar .inbound-ctrls .ctrl { padding: 3px 6px !important; font-size: 9.5px !important; }
+}
+
 /* Category filter chip row */
 .filter-chips {
   display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
@@ -1170,6 +1235,71 @@ button.action-card:hover { border-color: currentColor; transform: translateY(-1p
 .heatmap-scroll .heatmap { position: relative; }
 .heatmap-scroll .heatmap .hm-head { position: sticky; top: 0; z-index: 3; background: var(--bg-card); }
 .heatmap-scroll .heatmap .hm-corner { z-index: 4; }
+
+/* === Chart zoom (Büyüt) butonu === */
+.zoom-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink-3);
+  cursor: pointer; font-family: inherit;
+  transition: all .12s;
+  flex-shrink: 0;
+}
+.zoom-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); }
+.zoom-overlay {
+  position: fixed; inset: 0; z-index: 1500;
+  background: rgba(15, 23, 36, 0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: clamp(8px, 2vw, 20px);
+  animation: zoomOverlayIn .16s ease-out;
+  backdrop-filter: blur(4px);
+}
+@keyframes zoomOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+.zoom-content {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  width: min(1200px, calc(100vw - 2 * clamp(8px, 2vw, 20px)));
+  height: calc(100dvh - 2 * clamp(8px, 2vw, 20px));
+  max-height: 100dvh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,.4);
+  animation: zoomContentIn .2s cubic-bezier(.2,.9,.3,1.1);
+  overflow: hidden;
+}
+@keyframes zoomContentIn { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+.zoom-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.zoom-title {
+  font-family: 'Bricolage Grotesque';
+  font-size: 15px; font-weight: 700; letter-spacing: -0.01em;
+}
+.zoom-close {
+  width: 30px; height: 30px; border: 0; background: transparent;
+  color: var(--ink-3); font-size: 22px; line-height: 1; cursor: pointer;
+  border-radius: 6px; transition: all .12s;
+  display: flex; align-items: center; justify-content: center;
+}
+.zoom-close:hover { background: var(--line-soft); color: var(--ink); }
+.zoom-body {
+  flex: 1; min-height: 0;
+  overflow: auto; padding: 20px 24px;
+  display: flex; align-items: center; justify-content: center;
+}
+.zoom-body > * { width: 100%; max-width: 100%; }
+.zoom-body svg { max-width: 100%; height: auto; }
+@media (max-width: 640px) {
+  .zoom-head { padding: 10px 12px; }
+  .zoom-title { font-size: 13px; }
+  .zoom-body { padding: 12px; }
+}
 .filter-chip {
   background: var(--accent-wash); color: var(--accent-deep);
   padding: 3px 10px; border-radius: var(--r-pill);
