@@ -6,3 +6,8 @@ node_modules/
 .vercel/
 .railway/
 .claude/
+
+# Dev-only artifacts — production deploy için gereksiz
+uploads/
+screenshots/
+scraps/
