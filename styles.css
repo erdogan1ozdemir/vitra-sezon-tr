@@ -215,7 +215,15 @@ h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 .tab .badge { background: var(--accent-wash); color: var(--accent-deep); padding: 1px 8px; border-radius: var(--r-pill); font-size: 11px; margin-left: 6px; font-weight: 600; }
 
 /* Content */
-.content { padding: 24px 28px 48px; max-width: 1600px; margin: 0 auto; width: 100%; }
+/* .content akışkan: mobile'da sıkışmış, desktop/ultra-wide'da ekranı kullanır.
+   Padding clamp ile viewport'a göre ölçekleniyor; max-width 2200px ile çok
+   geniş 4K ekranlarda bile tek satırda okunabilir. */
+.content {
+  padding: clamp(14px, 1.5vw, 32px) clamp(12px, 2vw, 40px) 48px;
+  max-width: 2200px;
+  margin: 0 auto;
+  width: 100%;
+}
 .content.wide { max-width: none; }
 
 /* Grid helpers */
@@ -490,6 +498,10 @@ h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 .global-filter-wrap .filter-panel { margin-bottom: 10px; }
 @media (max-width: 768px) {
   .global-filter-wrap { top: 104px; padding: 8px 12px 0; }
+  .filter-panel { gap: 8px; padding: 10px 12px; }
+  .filter-panel > .multiselect { width: 100% !important; }
+  .filter-panel-label { width: 100%; font-size: 12px; }
+  .filter-panel-label span[class="txt-3"] { display: none; }
 }
 
 /* Heatmap */
@@ -942,12 +954,22 @@ tr.row-hl { background: var(--accent-wash) !important; }
 
 /* MOBILE & TABLET RESPONSIVE */
 @media (max-width: 900px) {
-  .topbar { padding: 12px 14px; gap: 10px; flex-wrap: wrap; }
+  .topbar {
+    padding: 10px 12px; gap: 8px; flex-wrap: wrap;
+    border-radius: 0 0 12px 12px;
+  }
+  .topbar .logo img { height: 22px !important; margin-right: 8px !important; }
+  .topbar .logo .subtitle { font-size: 9px; letter-spacing: .06em; }
   .topbar .title { font-size: 13px; }
   .topbar .subtitle { font-size: 10px; }
-  .topbar .ctrl { padding: 5px 10px; font-size: 11px; }
-  .tabs { padding: 0 10px; top: auto; }
-  .tab { padding: 12px 12px; font-size: 13px; }
+  .topbar .spacer { display: none; }
+  .topbar .inbound-brand { margin-left: auto; gap: 6px; }
+  .topbar .inbound-ctrls .ctrl { padding: 3px 8px !important; font-size: 10px !important; }
+  .topbar .inbound-logo-wrap { padding: 4px 10px 4px; }
+  .topbar .inbound-logo-wrap img { height: 14px !important; }
+  .topbar .inbound-logo-wrap > div { display: none; }
+  .tabs { padding: 0 8px; top: auto; }
+  .tab { padding: 10px 10px; font-size: 12.5px; }
   .tab .badge { display: none; }
   .content { padding: 14px 12px 32px; }
   .card { padding: 14px; }
