@@ -481,7 +481,9 @@ window.C = (function(){
   }
 
   // === Expandable explainer ===
-  function Explainer({title, sub, emoji='📊', children, defaultOpen=false}) {
+  // `icon` prop takes priority over `emoji` (emoji kept for backward compat);
+  // pass a React SVG node via `icon` for distinctive visuals
+  function Explainer({title, sub, emoji='📊', icon, children, defaultOpen=false}) {
     const [open, setOpen] = React.useState(() => {
       const saved = localStorage.getItem('vitra.explainer.open');
       return saved == null ? defaultOpen : saved === '1';
@@ -489,7 +491,9 @@ window.C = (function(){
     React.useEffect(() => { localStorage.setItem('vitra.explainer.open', open ? '1':'0'); }, [open]);
     return h('div',{className:'explainer'+(open?' open':'')},
       h('button',{className:'explainer-head', onClick:()=>setOpen(o=>!o)},
-        h('span',{className:'emoji'}, emoji),
+        icon
+          ? h('span',{className:'explainer-icon'}, icon)
+          : h('span',{className:'emoji'}, emoji),
         h('div',{className:'title-part'},
           h('div',{className:'main-title'}, title),
           sub && h('div',{className:'sub-title'}, sub)

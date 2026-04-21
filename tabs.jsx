@@ -5,6 +5,50 @@ window.TABS = (function(){
   const h = React.createElement;
   const D = window.DATA;
 
+  // ===== Icon helpers (emoji'ler yerine) — stroke SVG, currentColor ile renklenir =====
+  const Svg = (size, children) => h('svg', {
+    width: size, height: size, viewBox: '0 0 24 24',
+    fill: 'none', stroke: 'currentColor',
+    strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round',
+    'aria-hidden': true
+  }, children);
+  const I = {
+    Book: (s=20) => Svg(s, [
+      h('path',{key:1,d:'M4 4.5A1.5 1.5 0 0 1 5.5 3H18v18H5.5A1.5 1.5 0 0 1 4 19.5v-15z'}),
+      h('path',{key:2,d:'M4 18h14'}),
+      h('path',{key:3,d:'M8 7h6M8 10h6M8 13h4'})
+    ]),
+    Search: (s=14) => Svg(s, [
+      h('circle',{key:1, cx:11, cy:11, r:7}),
+      h('path',{key:2, d:'M20 20l-3.5-3.5'})
+    ]),
+    TrendUp: (s=14) => Svg(s, [
+      h('path',{key:1, d:'M3 17l6-6 4 4 7-7'}),
+      h('path',{key:2, d:'M14 8h6v6'})
+    ]),
+    Calendar: (s=14) => Svg(s, [
+      h('rect',{key:1, x:3, y:4, width:18, height:17, rx:2}),
+      h('path',{key:2, d:'M3 9h18M8 3v4M16 3v4'})
+    ]),
+    Target: (s=14) => Svg(s, [
+      h('circle',{key:1, cx:12, cy:12, r:9}),
+      h('circle',{key:2, cx:12, cy:12, r:5}),
+      h('circle',{key:3, cx:12, cy:12, r:1.5, fill:'currentColor'})
+    ]),
+    Bulb: (s=14) => Svg(s, [
+      h('path',{key:1, d:'M9 18h6'}),
+      h('path',{key:2, d:'M10 22h4'}),
+      h('path',{key:3, d:'M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.4 1 2.3v1h6v-1c0-.9.3-1.7 1-2.3A7 7 0 0 0 12 2z'})
+    ]),
+    Spark: (s=14) => Svg(s, [
+      h('path',{key:1, d:'M12 2v6M12 16v6M2 12h6M16 12h6M5 5l4 4M15 15l4 4M5 19l4-4M15 9l4-4'})
+    ]),
+    ArrowRight: (s=14) => Svg(s, [
+      h('path',{key:1, d:'M5 12h14M13 5l7 7-7 7'})
+    ])
+  };
+  window.ICONS = I;
+
   const KAT1_COLORS = {
     'Armatürler': '#FF7B52',
     'Banyo Aksesuarları': '#0054A6',
@@ -210,7 +254,7 @@ window.TABS = (function(){
     return h('div',null,
       // Report explainer at top
       h(Explainer,{
-        emoji:'📖',
+        icon: I.Book(22),
         title:'Bu rapor ne anlatıyor?',
         sub:'Arama hacmi, sezonsallık, YoY nedir, neye bakmalıyız?',
         defaultOpen:false
@@ -221,13 +265,13 @@ window.TABS = (function(){
         ),
         h('div',{className:'explainer-grid'},
           h('div',null,
-            h('h4',null,'🔍 Arama Hacmi Nedir?'),
+            h('h4',{className:'h4-icon'}, h('span',{className:'h4i'}, I.Search(16)), 'Arama Hacmi Nedir?'),
             h('p',null,
               'Bir kelimenin ayda kaç kere Google\'da arandığı. Örneğin "akıllı klozet" için ', h('strong',null,'8.100 / ay'),
               ' demek, Türkiye\'de her ay yaklaşık ', h('strong',null,'8.100 farklı arama'),
               ' bu konuda yapılıyor demektir. Bu sayı büyüdükçe ilgi & potansiyel müşteri havuzu büyür.'
             ),
-            h('h4',null,'📈 YoY (Year over Year) Nedir?'),
+            h('h4',{className:'h4-icon'}, h('span',{className:'h4i'}, I.TrendUp(16)), 'YoY (Year over Year) Nedir?'),
             h('p',null,
               'Bu yıl ile geçen yıl arasındaki büyüme / düşüş oranı. ', h('strong',null,'+45%'),
               ' = geçen yıla göre %45 arttı. ', h('strong',null,'-20%'), ' = %20 düştü.',
@@ -235,13 +279,13 @@ window.TABS = (function(){
             )
           ),
           h('div',null,
-            h('h4',null,'🗓️ Sezon Takvimi (Heatmap)'),
+            h('h4',{className:'h4-icon'}, h('span',{className:'h4i'}, I.Calendar(16)), 'Sezon Takvimi (Heatmap)'),
             h('p',null,
               'Her satır bir kategori, her sütun bir ay. ', h('span',{style:{color:'#e67c73',fontWeight:600}},'Kırmızı'),
               ' = düşük arama, ', h('span',{style:{color:'#fbbc04',fontWeight:600}},'sarı'), ' = orta, ',
               h('span',{style:{color:'#57bb8a',fontWeight:600}},'yeşil'), ' = peak (o satırın en yüksek ayı). Pazarlama ve SEO takvimi için bu ritım referans alınabilir.'
             ),
-            h('h4',null,'🎯 Nasıl Kullanılır?'),
+            h('h4',{className:'h4-icon'}, h('span',{className:'h4i'}, I.Target(16)), 'Nasıl Kullanılır?'),
             h('ul',null,
               h('li',null, h('strong',null,'Özet'),': kuşbakışı trend & kazanan/kaybeden ürünler.'),
               h('li',null, h('strong',null,'Kategoriler'),': Kat1 > Kat2 > Kat3 drill-down ile detay.'),
@@ -251,8 +295,9 @@ window.TABS = (function(){
             )
           )
         ),
-          h('p',{style:{marginTop:12,paddingTop:12,borderTop:'1px solid var(--line)',color:'var(--ink-3)',fontSize:12}},
-          '💡 ', h('strong',null,'İpucu: '), 'Grafik başlıklarının yanındaki "?" ikonlarına mouse ile gelindiğinde o grafiğin ne anlattığı ve nasıl okunacağı görülebilir. Grafik çubuklarına / dilimlerine tıklandığında ilgili keyword listesine filtreli şekilde inilebilir.'
+          h('p',{className:'tip-row', style:{marginTop:12,paddingTop:12,borderTop:'1px solid var(--line)',color:'var(--ink-3)',fontSize:12, display:'flex', alignItems:'flex-start', gap:8}},
+          h('span',{className:'tip-icon'}, I.Bulb(14)),
+          h('span',null, h('strong',null,'İpucu: '), 'Grafik başlıklarının yanındaki "?" ikonlarına mouse ile gelindiğinde o grafiğin ne anlattığı ve nasıl okunacağı görülebilir. Grafik çubuklarına / dilimlerine tıklandığında ilgili keyword listesine filtreli şekilde inilebilir.')
         )
       ),
 
@@ -336,7 +381,7 @@ window.TABS = (function(){
       ),
 
       h('div',{className:'insight-strip'},
-        h('span',{className:'arrow'}, '➔'),
+        h('span',{className:'arrow'}, I.ArrowRight(14)),
         h('div',null,
           hasGlobalFilter ? `Seçili filtrede toplam arama 2024'e kıyasla ` : `2024'e kıyasla toplam arama `,
           h('strong',null, fmtPct(f_TOTAL_YOY)),
@@ -345,6 +390,53 @@ window.TABS = (function(){
           h('strong',null, TR_MONTHS_LONG[f_PEAK_IDX]), `.`
         )
       ),
+
+      // === Aksiyon Kartları (B1) ===
+      // Peak-based content timing + rising KW opportunity → concrete next steps
+      (() => {
+        const peakIdx = f_PEAK_IDX;
+        // İçerik peak'ten 6 hafta önce canlıda olsun: ~1.5 ay öncesi
+        const targetIdx = (peakIdx - 2 + 12) % 12;
+        return h('div',{className:'action-strip'},
+          h('div',{className:'action-card action-calendar'},
+            h('div',{className:'action-icon'}, I.Calendar(20)),
+            h('div',{className:'action-body'},
+              h('div',{className:'action-title'}, 'Peak için içerik takvimi'),
+              h('div',{className:'action-text'},
+                'Peak ay ', h('strong',null, TR_MONTHS_LONG[peakIdx]),
+                ' · ranking için ', h('strong',null, TR_MONTHS_LONG[targetIdx]),
+                ' ortasına kadar içeriğin canlıda olması önerilir (4–6 hafta index süresi).'
+              )
+            )
+          ),
+          risingCnt > 0 && h('button',{
+            className:'action-card action-opportunity',
+            onClick: () => onNavigateKw({trend:'rising'})
+          },
+            h('div',{className:'action-icon'}, I.TrendUp(20)),
+            h('div',{className:'action-body'},
+              h('div',{className:'action-title'}, 'İçerik fırsatı'),
+              h('div',{className:'action-text'},
+                h('strong',null, fmtFull(risingCnt)),
+                ' keyword YoY +%5 üzerinde. Yükselen listeyi keyword tab\'ında filtreli aç →'
+              )
+            )
+          ),
+          fallingCnt > 0 && h('button',{
+            className:'action-card action-risk',
+            onClick: () => onNavigateKw({trend:'falling'})
+          },
+            h('div',{className:'action-icon'}, I.Bulb(20)),
+            h('div',{className:'action-body'},
+              h('div',{className:'action-title'}, 'Risk taraması'),
+              h('div',{className:'action-text'},
+                h('strong',null, fmtFull(fallingCnt)),
+                ' keyword erozyonda. Rakip analizi + içerik yenileme adaylarını incele →'
+              )
+            )
+          )
+        );
+      })(),
 
       // Trend + Donut row
       h(SectionHeader, {
@@ -1059,7 +1151,7 @@ window.TABS = (function(){
 
     return h('div',null,
       h('div',{className:'toolbar'},
-        h('input',{className:'input', placeholder:'🔍 Keyword ara…', value:q, onChange:e=>setQ(e.target.value), style:{flex:1, minWidth:160}}),
+        h('input',{className:'input input-search', placeholder:'Keyword ara…', value:q, onChange:e=>setQ(e.target.value), style:{flex:1, minWidth:160}}),
         h('select',{className:'select', value:k1, onChange:e=>{setK1(e.target.value); setK2(''); setK3('');}},
           h('option',{value:''}, 'Tüm Kat 1'),
           D.kat1Summary.map(k => h('option',{key:k.k1, value:k.k1}, k.k1))
@@ -1351,6 +1443,55 @@ window.TABS = (function(){
         );
       })(),
 
+      // === Yıldız Yükselişler (B3) ===
+      // Filtrelenen evrende YoY >= 100% (2x) olan outlier'lar — olağanüstü
+      // büyüyen keyword'ler için dikkat çeken compact strip.
+      (() => {
+        const stars = filteredKws
+          .filter(k => k.yoy >= 1.0 && (k.a25 || 0) >= 100)  // min hacim 100/ay — gürültüyü keser
+          .sort((a, b) => b.yoy - a.yoy)
+          .slice(0, 8);
+        if (stars.length === 0) return null;
+        const topYoY = stars[0].yoy;
+        return h('div',{className:'card card-stars', style:{marginBottom:18, position:'relative', overflow:'hidden'}},
+          h('div',{className:'card-title-row', style:{display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap'}},
+            h('div',{style:{display:'flex', alignItems:'center', gap:10, minWidth:0}},
+              h('span',{className:'stars-badge'}, I.Spark(18)),
+              h('div',null,
+                h('h3',{style:{margin:0}},'Yıldız Yükselişler',
+                  h(InfoIcon,null,
+                    h('strong',null,'Ne gösterir? '),'Filtrelenen keyword evreninde YoY ≥ %100 (yani 2 katı büyümüş) ve aylık ortalama ≥ 100 arama olan outlier\'lar.',
+                    h('br'),h('br'),h('strong',null,'Ne için? '),'"Birden patlayan" sorguları öne çıkarır. Pazarda oluşan yeni bir ihtiyaç ya da kampanya/ürün dalgasına işaret edebilir — içerik stratejisi için hızlı fırsat kanalı.'
+                  )
+                ),
+                h('div',{className:'txt-3', style:{fontSize:11, marginTop:2}}, stars.length, ' outlier · en yüksek ', h('strong',{style:{color:'var(--coral-deep)'}}, '+', fmtPct(topYoY, 0).replace('+','')))
+              )
+            ),
+            h('span',{className:'hint'}, 'YoY ≥ +100% · min 100/ay')
+          ),
+          h('div',{className:'stars-grid'},
+            stars.map((k, i) => {
+              const peakIdx = k.m25.indexOf(Math.max(...k.m25));
+              return h('button',{
+                key: i, className:'star-item', onClick: () => setKeywordModal(k)
+              },
+                h('div',{className:'star-head'},
+                  h('div',{style:{width:6, height:6, borderRadius:2, background: katColor(k.k1), flexShrink:0}}),
+                  h('div',{className:'star-kw'}, k.kw),
+                  h('span',{className:'star-yoy'}, '+', fmtPct(k.yoy, 0).replace('+',''))
+                ),
+                h('div',{className:'star-meta'},
+                  h('span',{className:'star-cat'}, k.k1, k.k2 ? ' > ' + k.k2 : ''),
+                  h('span',{className:'star-vol'}, fmtNum(k.a25), '/ay'),
+                  h('span',{className:'star-peak'}, 'Peak: ', TR_MONTHS[peakIdx])
+                ),
+                h(Sparkline, {values: k.m25, w: 110, h: 22})
+              );
+            })
+          )
+        );
+      })(),
+
       h('div',{className:'grid grid-main', style:{marginBottom:18}},
         h('div',{className:'card flush'},
           h('div',{className:'card-title-row', style:{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8}},
@@ -1523,7 +1664,7 @@ window.TABS = (function(){
         h(Kpi,{label:'Peak Ay', value:TR_MONTHS[monthly.indexOf(Math.max(...monthly))]}),
       ),
       h('div',{className:'insight-strip'},
-        h('span',{className:'arrow'},'➔'),
+        h('span',{className:'arrow'}, I.ArrowRight(14)),
         h('div',null,'"Fiyat", "ne kadar", "ucuz" gibi satın alma niyeti (purchase intent) keywordleri. Bu keywordlerde sıralama & direkt dönüşüm sinyali.')
       ),
       h('div',{className:'grid grid-main', style:{marginBottom:18}},
@@ -1631,13 +1772,16 @@ window.TABS = (function(){
           )
         ),
 
-        kw.m25 && h('div',{style:{fontSize:13,color:'var(--ink-2)',lineHeight:1.6,background:'var(--line-soft)',padding:14,borderRadius:8}},
-          h('strong',null,'💡 Aksiyon: '),
-          cvVal > 0.3 ?
-            `Yüksek mevsimsel bir keyword. İçeriğin ${TR_MONTHS_LONG[peakIdx]} peak'inden 4-6 hafta önce güncellenmesi; ranking takviminin bu ritim üzerinden kurgulanması önerilebilir.` :
-            cvVal > 0.15 ?
-            `Orta mevsimsel. ${TR_MONTHS_LONG[peakIdx]} civarı öne çıkıyor; ancak yıl boyu hacim olduğundan evergreen içerik + sezonsal boost kombinasyonu değerlendirilebilir.` :
-            `Evergreen bir keyword. Sıralamanın sürekli korunması önerilir; ${kw.yoy>0?'hacim büyüyor, fırsat değerlendirilebilir':'erime var, rakip analizi faydalı olabilir'}.`
+        kw.m25 && h('div',{style:{fontSize:13,color:'var(--ink-2)',lineHeight:1.6,background:'var(--line-soft)',padding:14,borderRadius:8, display:'flex', gap:10, alignItems:'flex-start'}},
+          h('span',{style:{color:'var(--coral)', paddingTop:2, flexShrink:0}}, I.Bulb(16)),
+          h('div',null,
+            h('strong',null,'Aksiyon: '),
+            cvVal > 0.3 ?
+              `Yüksek mevsimsel bir keyword. İçeriğin ${TR_MONTHS_LONG[peakIdx]} peak'inden 4-6 hafta önce güncellenmesi; ranking takviminin bu ritim üzerinden kurgulanması önerilebilir.` :
+              cvVal > 0.15 ?
+              `Orta mevsimsel. ${TR_MONTHS_LONG[peakIdx]} civarı öne çıkıyor; ancak yıl boyu hacim olduğundan evergreen içerik + sezonsal boost kombinasyonu değerlendirilebilir.` :
+              `Evergreen bir keyword. Sıralamanın sürekli korunması önerilir; ${kw.yoy>0?'hacim büyüyor, fırsat değerlendirilebilir':'erime var, rakip analizi faydalı olabilir'}.`
+          )
         )
       )
     );

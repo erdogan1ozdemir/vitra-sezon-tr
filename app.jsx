@@ -9,18 +9,40 @@
     "density": "comfortable"
   }/*EDITMODE-END*/;
 
+  // URL state helpers — tab + global filter hash içinde yaşar; paylaşılabilir link
+  function readHashState() {
+    try {
+      const m = location.hash.match(/^#?v=([^&]+)/);
+      if (!m) return null;
+      return JSON.parse(decodeURIComponent(atob(m[1])));
+    } catch { return null; }
+  }
+  function writeHashState(state) {
+    const empty = !state.tab && state.k1.length === 0 && state.k2.length === 0 && state.k3.length === 0;
+    if (empty) {
+      // Temiz hash — filtre yoksa URL de sade kalsın
+      if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+      return;
+    }
+    const encoded = btoa(encodeURIComponent(JSON.stringify(state)));
+    const newHash = '#v=' + encoded;
+    if (location.hash !== newHash) history.replaceState(null, '', location.pathname + location.search + newHash);
+  }
+
   function App() {
     const D = window.DATA;
     const KAT1_COLORS = window.KAT1_COLORS || {};
-    const [tab, setTab] = React.useState(() => localStorage.getItem('vitra.tab') || 'ozet');
+    // İlk açılışta URL hash'inden state'i oku — yoksa localStorage'a düş
+    const initialHash = readHashState();
+    const [tab, setTab] = React.useState(() => (initialHash && initialHash.tab) || localStorage.getItem('vitra.tab') || 'ozet');
     const [filter, setFilter] = React.useState({k1:null, k2:null});
     const [keywordInitFilter, setKeywordInitFilter] = React.useState(null);
     const [keywordModal, setKeywordModal] = React.useState(null);
 
     // Global 3-level category filter (lifted from OzetTab — lives above tabs)
-    const [globalK1, setGlobalK1] = React.useState([]);
-    const [globalK2, setGlobalK2] = React.useState([]);
-    const [globalK3, setGlobalK3] = React.useState([]);
+    const [globalK1, setGlobalK1] = React.useState(() => (initialHash && initialHash.k1) || []);
+    const [globalK2, setGlobalK2] = React.useState(() => (initialHash && initialHash.k2) || []);
+    const [globalK3, setGlobalK3] = React.useState(() => (initialHash && initialHash.k3) || []);
     const hasGlobalFilter = globalK1.length > 0 || globalK2.length > 0 || globalK3.length > 0;
     const allKat1 = React.useMemo(() => D.kat1Summary.map(k => k.k1), []);
     const g_k1Set = globalK1.length ? new Set(globalK1) : null;
@@ -53,6 +75,21 @@
       document.documentElement.dataset.palette = tweaks.palette;
       localStorage.setItem('vitra.tweaks', JSON.stringify(tweaks));
     }, [tweaks]);
+
+    // URL hash sync — tab ve global filtre her değişimde URL'ye yazılır (paylaşılabilir link)
+    React.useEffect(() => {
+      writeHashState({ tab, k1: globalK1, k2: globalK2, k3: globalK3 });
+    }, [tab, globalK1, globalK2, globalK3]);
+
+    // Link kopyala — URL'yi clipboard'a kopyalar + "Kopyalandı" toast
+    const [linkCopied, setLinkCopied] = React.useState(false);
+    const copyShareLink = async () => {
+      try {
+        await navigator.clipboard.writeText(location.href);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 1600);
+      } catch {}
+    };
 
     // Edit mode protocol
     React.useEffect(() => {
@@ -120,6 +157,24 @@
         // Controls + Inbound brand block — right side, controls LEFT of logo
         h('div',{className:'inbound-brand'},
           h('div',{className:'inbound-ctrls'},
+            h('button',{
+              className:'ctrl inbound-ctrl' + (linkCopied?' active':''),
+              onClick: copyShareLink,
+              title: linkCopied ? 'Link panoya kopyalandı' : 'Bu görünümün paylaşılabilir link\'ini kopyala'
+            },
+              linkCopied
+                ? h(React.Fragment, null,
+                    h('svg',{width:12, height:12, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:2.2, strokeLinecap:'round', strokeLinejoin:'round', style:{marginRight:4}}, h('path',{d:'M5 12l5 5L20 7'})),
+                    'Kopyalandı'
+                  )
+                : h(React.Fragment, null,
+                    h('svg',{width:12, height:12, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:2, strokeLinecap:'round', strokeLinejoin:'round', style:{marginRight:4}},
+                      h('circle',{cx:18,cy:5,r:3}), h('circle',{cx:6,cy:12,r:3}), h('circle',{cx:18,cy:19,r:3}),
+                      h('line',{x1:8.59,y1:13.51,x2:15.42,y2:17.49}), h('line',{x1:15.41,y1:6.51,x2:8.59,y2:10.49})
+                    ),
+                    'Paylaş'
+                  )
+            ),
             h('button',{className:'ctrl inbound-ctrl', onClick:()=>applyTweak({theme: tweaks.theme==='dark'?'light':'dark'})},
               tweaks.theme==='dark' ? '☀ Light' : '☾ Dark'
             ),
@@ -147,7 +202,13 @@
       h('div',{className:'global-filter-wrap'+(filterScrolled?' scrolled':'')},
         h('div',{className:'filter-panel'},
           h('div',{className:'filter-panel-label'},
-            h('span',null,'🎯 '),
+            h('span',{className:'fp-icon'},
+              h('svg',{width:16, height:16, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:1.8, strokeLinecap:'round', strokeLinejoin:'round', 'aria-hidden':true},
+                h('circle',{cx:12, cy:12, r:9}),
+                h('circle',{cx:12, cy:12, r:5}),
+                h('circle',{cx:12, cy:12, r:1.5, fill:'currentColor'})
+              )
+            ),
             h('strong',null,'Kategori Filtresi'),
             hasGlobalFilter
               ? h('span',{className:'txt-3', style:{fontSize:11, marginLeft:8}},
