@@ -330,11 +330,13 @@ window.TABS = (function(){
           )
         ),
         h('div',{className:'hk-spark'},
+          // Legend kartın subtitle bölgesinde zaten söyleniyor; chart konteynere
+          // tam oturması için legend:false. Renk kodu 2024 gri / 2025 coral.
           h(LineChart,{
             series:[
               {name:'2024', values:f_MONTHLY_24, color:'color-mix(in srgb, var(--ink-3) 80%, transparent)'},
               {name:'2025', values:f_MONTHLY_25, color:'var(--coral)', peakIdx:f_PEAK_IDX}
-            ], legend:true, height:140
+            ], legend:false, height:140
           })
         ),
         h('div',{className:'hk-right'},
