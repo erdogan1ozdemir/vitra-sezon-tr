@@ -412,9 +412,21 @@ h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 .hero-kpi .hk-peak { font-family: 'Bricolage Grotesque'; font-size: 28px; font-weight: 700; color: var(--ink); letter-spacing: -0.03em; }
 .hero-kpi .hk-peak-label { font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 4px; font-weight: 700; }
 @media (max-width: 900px) {
-  .hero-kpi { grid-template-columns: 1fr; }
-  .hero-kpi .hk-spark { width: 100%; max-width: none; height: 120px; }
-  .hero-kpi .hk-right { text-align: left; }
+  /* Mobile/tablet: value + peak yan yana üstte, chart altta full-width.
+     3-row stack (value / chart / peak) yerine 2-row yerleşim, daha dengeli. */
+  .hero-kpi {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "left right"
+      "spark spark";
+    gap: 14px 18px;
+    padding: 20px 18px;
+  }
+  .hero-kpi .hk-left { grid-area: left; min-width: 0; }
+  .hero-kpi .hk-right { grid-area: right; text-align: right; }
+  .hero-kpi .hk-spark { grid-area: spark; width: 100%; max-width: none; min-width: 0; height: 160px; }
+  .hero-kpi .hk-peak { font-size: 22px; }
+  .hero-kpi .hk-peak-label { font-size: 9px; letter-spacing: .14em; }
 }
 
 /* ============ KPI mini-strip ============ */
@@ -1217,7 +1229,7 @@ button.action-card:hover { border-color: currentColor; transform: translateY(-1p
   .action-card .action-title { font-size: 12.5px; }
   .action-card .action-text { font-size: 11.5px; line-height: 1.45; }
   /* Hero sparkline mobilde yüksek, yorumlanabilir */
-  .hero-kpi .hk-spark { height: 100px; min-width: 0; }
+  .hero-kpi .hk-spark { height: 140px; min-width: 0; }
   /* Stars (yıldız yükselişler) mobilde tek kolon, daha rahat */
   .stars-grid { grid-template-columns: 1fr; gap: 8px; }
   .star-item { padding: 8px 10px; }

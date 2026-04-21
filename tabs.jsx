@@ -233,12 +233,18 @@ window.TABS = (function(){
       }).sort((a,b)=>b.tot-a.tot);
     }, [qLevel, qFilter]);
 
-    // Heatmap rows
+    // Heatmap rows - 2025 toplam arama hacmine göre desc sıralı
     const heatRows = React.useMemo(() => {
       let rows;
       if (heatLevel === 'kat1') rows = D.kat1Monthly;
       else if (heatLevel === 'kat2') rows = D.kat2Monthly.filter(r => !heatFilter.k1 || r.labels[0] === heatFilter.k1);
       else rows = D.kat3Monthly.filter(r => (!heatFilter.k1 || r.labels[0] === heatFilter.k1) && (!heatFilter.k2 || r.labels[1] === heatFilter.k2));
+      // En yüksek 2025 hacminden en düşüğe sıralanır
+      rows = [...rows].sort((a, b) => {
+        const aTot = (a.m25 || []).reduce((s,x) => s+x, 0);
+        const bTot = (b.m25 || []).reduce((s,x) => s+x, 0);
+        return bTot - aTot;
+      });
       // Tüm satırlar gösterilir; kart içi dikey scroll container (aşağıda) uzun listeyi taşıyor
       return rows.map(r => {
         const peakIdx = r.m25.indexOf(Math.max(...r.m25));
