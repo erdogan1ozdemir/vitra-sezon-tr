@@ -1,6 +1,6 @@
 // Main App
 (function(){
-  const { OzetTab, KategorilerTab, KeywordTab, TrendlerTab, FiyatTab, KeywordModal } = window.TABS;
+  const { OzetTab, KategorilerTab, KeywordTab, TrendlerTab, FiyatTab, FirsatTab, KeywordModal } = window.TABS;
   const h = React.createElement;
 
   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -151,6 +151,7 @@
       { id:'keyword', label:'Keyword', badge: window.DATA.keywords.length.toLocaleString('tr-TR') },
       { id:'trendler', label:'Trendler', badge:null },
       { id:'fiyat', label:'Fiyat Intent', badge:null },
+      { id:'firsat', label:'Banyo Mob. Fırsat Analizi', badge:null },
     ];
 
     const activeTab = tab;
@@ -166,6 +167,7 @@
         case 'keyword': return h(KeywordTab, {setKeywordModal, initialFilter: keywordInitFilter, clearInitialFilter: () => setKeywordInitFilter(null), globalFilter});
         case 'trendler': return h(TrendlerTab, {setKeywordModal, onNavigateKw, globalFilter});
         case 'fiyat': return h(FiyatTab, {setKeywordModal, globalFilter});
+        case 'firsat': return h(FirsatTab, {});
       }
     }
 
@@ -224,8 +226,8 @@
         }, t.label, t.badge && h('span',{className:'badge'}, t.badge)))
       ),
 
-      // Global category filter - sticky under tabs, visible across all tabs
-      h('div',{className:'global-filter-wrap'+(filterScrolled?' scrolled':'')+(filterHidden?' hidden':'')},
+      // Global category filter - sticky under tabs (Fırsat sekmesinde gizli: kendi Kat2/Kat3 filtresi var, Kat1 gereksiz)
+      tab !== 'firsat' && h('div',{className:'global-filter-wrap'+(filterScrolled?' scrolled':'')+(filterHidden?' hidden':'')},
         h('div',{className:'filter-panel'},
           h('div',{className:'filter-panel-label'},
             h('span',{className:'fp-icon'},
