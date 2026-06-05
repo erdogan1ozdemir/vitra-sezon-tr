@@ -882,6 +882,430 @@
     );
   }
 
+  // ============================================================
+  // === Rakip Analizi sekmesi ===
+  // Statik araştırma çıktısı (2026-06-04). Pazaryeri + content gap + rakip araştırması; canlı veri kullanmaz.
+  // ============================================================
+  function RakipTab(){
+    const [sub, setSub] = React.useState('ozet');
+    const RG = window.RAKIP_GAP || {meta:{}, competitors:[]};
+    const RGcomp = RG.competitors || [];
+    const [gapComp, setGapComp] = React.useState(RGcomp[0] ? RGcomp[0].dom : null);
+    const [gapSort, setGapSort] = React.useState('tr');
+    const gapTotalTraf = RGcomp.reduce((a,c)=>a+c.traffic,0) || 1;
+    const gapTotalGap = RGcomp.reduce((a,c)=>a+c.gapTraffic,0);
+    const compColors = ['#6366F1','#0EA5E9','#10B981','#F59E0B','#EC4899','#8B5CF6','#14B8A6'];
+    const sc = RGcomp.find(c=>c.dom===gapComp) || RGcomp[0] || null;
+    const scKwRows = sc ? [...sc.topKeywords].sort((a,b)=> gapSort==='pos' ? (a.pos-b.pos) : (b[gapSort]-a[gapSort])) : [];
+    const ACC = '#6366F1';
+
+    // ---- tema-duyarlı yardımcılar ----
+    const stMap = {
+      yok:  {bg:'var(--red-wash)',   c:'var(--red)',         t:'Yok'},
+      var:  {bg:'var(--green-wash)', c:'var(--green)',       t:'Var'},
+      guclu:{bg:'var(--green-wash)', c:'var(--green)',       t:'Güçlü'},
+      kismi:{bg:'var(--accent-wash)',c:'var(--accent-deep)', t:'Kısmen var'},
+      zayif:{bg:'var(--accent-wash)',c:'var(--accent-deep)', t:'Zayıf'},
+      info: {bg:'var(--line-soft)',  c:'var(--ink-2)',       t:'Bilgi'},
+    };
+    const pill = (kind, label) => { const m = stMap[kind]||stMap.info; return h('span',{className:'pill', style:{background:m.bg, color:m.c, fontWeight:700}}, label||m.t); };
+    const stTitle = (kind, label) => h('span',{style:{marginLeft:8, verticalAlign:'middle'}}, pill(kind,label));
+
+    const P = (label, text, key) => h('p',{key, style:{margin:'9px 0', lineHeight:1.65, color:'var(--ink-2)', fontSize:14}},
+      label ? h('strong',{style:{color:'var(--ink)'}}, label+' ') : null, text);
+
+    const insight = (title, text, key) => h('div',{key, style:{display:'flex', gap:11, alignItems:'flex-start', background:'var(--accent-wash)', borderLeft:'3px solid var(--accent)', borderRadius:'0 10px 10px 0', padding:'12px 15px', margin:'14px 0'}},
+      h('span',{style:{flexShrink:0, fontSize:16}}, '💡'),
+      h('div',null,
+        h('div',{style:{fontWeight:700, color:'var(--ink)', fontSize:13, marginBottom:3, textTransform:'uppercase', letterSpacing:'.04em'}}, title),
+        h('div',{style:{color:'var(--ink-2)', fontSize:14, lineHeight:1.6}}, text)
+      )
+    );
+    const note = (node, warn) => h('div',{style:{borderLeft:'3px solid '+(warn?'var(--accent)':'var(--ink-3)'), background:'var(--line-soft)', borderRadius:'0 10px 10px 0', padding:'12px 15px', margin:'14px 0', fontSize:13.5, color:'var(--ink-2)', lineHeight:1.6}}, node);
+    const fmtTr = (n) => fmtFull(Math.round(n||0));
+    const shortUrl = (u) => { try { const x = new URL(u); let p = x.pathname || '/'; if (p.length>44) p = p.slice(0,42)+'…'; return p; } catch(e){ return (u||'').slice(0,44); } };
+    const urlLink = (u) => u ? h('a',{href:u, target:'_blank', rel:'noopener noreferrer', title:u, style:{color:'var(--accent-deep)', textDecoration:'none', fontSize:12}}, shortUrl(u)) : h('span',{style:{color:'var(--ink-3)'}},'—');
+
+    // talep çubuğu listesi
+    const demandBars = (rows, color) => { const max = Math.max.apply(null, rows.map(r=>r[1]));
+      return h('div',{style:{display:'flex', flexDirection:'column', gap:8, margin:'4px 0'}},
+        rows.map((r,i)=>h('div',{key:i},
+          h('div',{style:{display:'flex', justifyContent:'space-between', fontSize:12.5, marginBottom:3}},
+            h('span',{style:{color:'var(--ink-2)'}}, r[0]),
+            h('span',{className:'num', style:{fontWeight:700, color:'var(--ink)'}}, fmtFull(r[1])+' /ay')),
+          h('div',{style:{height:7, borderRadius:4, background:'var(--line)', overflow:'hidden'}},
+            h('div',{style:{width:Math.max(r[1]/max*100,2)+'%', height:'100%', background:color||ACC}}))
+        ))
+      );
+    };
+
+    // global ölçekli fiyat bandı (0..35000 ₺) + uç etiketleri
+    const priceBand = (loTxt, hiTxt, lo, hi, color) => { const GMAX=35000; const a=Math.min(lo,GMAX)/GMAX*100, b=Math.min(hi,GMAX)/GMAX*100;
+      return h('div',{style:{margin:'10px 0 2px'}},
+        h('div',{style:{position:'relative', height:9, borderRadius:5, background:'var(--line)'}},
+          h('div',{style:{position:'absolute', left:a+'%', width:Math.max(b-a,2.5)+'%', top:0, bottom:0, borderRadius:5, background:color||ACC}})
+        ),
+        h('div',{style:{display:'flex', justifyContent:'space-between', fontSize:11.5, color:'var(--ink-3)', marginTop:4}},
+          h('span',null, loTxt), h('span',null, hiTxt))
+      );
+    };
+
+    const dataTable = (head, rows, footNote) => h('div',{className:'card flush', style:{marginTop:12}},
+      h('div',{className:'tbl-wrap', style:{maxHeight:'none'}},
+        h('table',{className:'tbl'},
+          h('thead',null, h('tr',null, head.map((hd,i)=>h('th',{key:i}, hd)))),
+          h('tbody',null, rows.map((r,ri)=>h('tr',{key:ri}, r.map((c,ci)=>
+            h('td',{key:ci, style: ci===0?{fontWeight:600, color:'var(--ink)'}:{color:'var(--ink-2)', fontSize:12.5}}, c)))))
+        )
+      ),
+      footNote ? h('div',{style:{padding:'10px 14px', fontSize:11.5, color:'var(--ink-3)', borderTop:'1px solid var(--line)', lineHeight:1.5}}, footNote) : null
+    );
+
+    const SH = (icon, title, desc) => h(SectionHeader, {accent:'#6366F1', icon, title, desc});
+    const ic = (paths) => h('svg',{width:22,height:22,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'}, paths);
+    const ICO = {
+      bolt: ic(h('polygon',{points:'13 2 3 14 12 14 11 22 21 10 12 10 13 2'})),
+      grid: ic([h('rect',{key:1,x:3,y:3,width:7,height:7}),h('rect',{key:2,x:14,y:3,width:7,height:7}),h('rect',{key:3,x:14,y:14,width:7,height:7}),h('rect',{key:4,x:3,y:14,width:7,height:7})]),
+      cart: ic([h('circle',{key:1,cx:9,cy:21,r:1}),h('circle',{key:2,cx:20,cy:21,r:1}),h('path',{key:3,d:'M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6'})]),
+      gap: ic([h('circle',{key:1,cx:11,cy:11,r:8}),h('line',{key:2,x1:21,y1:21,x2:16.65,y2:16.65})]),
+    };
+
+    // ---------- VERİ ----------
+    const KPIS = [
+      {lab:'Yedek ve sarf parça', vol:'~23.000', rank:'1. öncelik', tone:'En hızlı kazanım'},
+      {lab:'Mutfak evyesi', vol:'~15.000', rank:'2. öncelik', tone:'En yüksek ticari değer'},
+      {lab:'Arıtmalı içme suyu bataryası', vol:'~8.000', rank:'3. öncelik', tone:'En net yeni hat'},
+      {lab:'Sonradan takılan akıllı kapak', vol:'~1.000', rank:'4. izle', tone:'Erken giriş'},
+    ];
+    const CLUSTER_DEMAND = [
+      {label:'Yedek / sarf parça', value:23000, color:'#6366F1'},
+      {label:'Mutfak evyesi (granit/çelik/akıllı)', value:15000, color:'#0EA5E9'},
+      {label:'Arıtmalı / içme suyu bataryası', value:8000, color:'#10B981'},
+      {label:'Akıllı / bide klozet kapağı', value:1000, color:'#F59E0B'},
+    ];
+    const CLUSTERS = [
+      {kicker:'Küme 1 · 1. öncelik', title:'Yedek ve sarf parça', st:['zayif','Üretiliyor ama satılmıyor'], color:'#6366F1',
+        demand:[['musluk başlığı (perlatör)',11000],['duşakabin tekerleği',5200],['perlatör',4700],['batarya kartuşu',2100],['klozet kapağı amortisörü',150]],
+        price:['24 ₺ · jenerik','700 ₺ · orijinal',24,700],
+        rows:[
+          ['Bizde var mı?','VitrA bu parçaları zaten üretiyor, fakat tüketiciye dönük tekil ürün sayfası (SKU) ve pazaryeri varlığı olarak sunmuyor. Yalnız "VitrA servis yedek parça" sayfası markalı aramada öne çıkıyor; jenerik "perlatör" gibi aramalarda görünmüyor.'],
+          ['Rakipte kim var?','Trendyol ve Hepsiburada bu başlıklarda yüzlerce jenerik, markasız ürünle dolu. Orijinal Artema parçaları ise yedekmarket.net, banyoevin.com gibi bağımsız uzman bayilere sıkışmış, ana pazaryeri akışında zayıf.'],
+        ],
+        ins:['Ürün geliştirmesi gerektirmeyen en hızlı hamle','Orijinal parçayı tüketici ürünü olarak listelemek ve üstüne Grohe / Hansgrohe gibi bir "parça bulucu" aracı (patlatılmış çizim, parça numarası, montaj videosu) eklemek. Hem ek ciro hem jenerik satıcılara karşı marka savunması sağlar; talep yüksek ve rekabet zorluğu sıfıra yakın.']},
+      {kicker:'Küme 2 · 2. öncelik', title:'Mutfak evyesi: granit, paslanmaz çelik, akıllı', st:['kismi','Sadece seramik var'], color:'#0EA5E9',
+        demand:[['akıllı (workstation) evye',6800],['granit evye',5000],['tezgah altı evye',1300],['çelik evye',900],['paslanmaz evye',300]],
+        price:['5.000 ₺','35.000 ₺',5000,35000],
+        rows:[
+          ['Bizde var mı?','VitrA’nın seramik Arkitekt eviye hattı var (tek gözlü, çift gözlü, 1.5 gözlü, fireclay apron). Ancak talebin ve en yüksek tıklama başı maliyetin yoğunlaştığı granit, paslanmaz çelik ve akıllı/workstation segmentlerinde ürünü yok. Sorun toplam yokluk değil, yanlış malzemede kalmak.'],
+          ['Rakipte kim var?','Granitte Franke, Blanco (tescilli "Silgranit") ve Teka baskın. Akıllı/workstation evyeyi ise Crauf, Schnelle, Mase Mode gibi yerli markalar kurmuş; şelale akış, çekilebilir batarya, bıçaklık ve çöp modülü gibi özelliklerle mutfakta bir "çalışma istasyonu" olarak konumluyorlar.'],
+        ],
+        ins:['Mevcut güçten beslenen büyüme','VitrA mutfak bataryasında zaten güçlü. Granit ve workstation evye eklemek, hem mevcut mutfak bataryası trafiğinden beslenir hem de evye ile batarya set satışı açar. Bu kümede ticari değer (CPC) en yüksek seviyede.']},
+      {kicker:'Küme 3 · 3. öncelik', title:'Arıtmalı / içme suyu filtreli batarya', st:['yok','Katalogda yok'], color:'#10B981',
+        demand:[['arıtmalı musluk',5500],['arıtmalı batarya',1700],['su arıtmalı batarya',450],['3 yollu batarya',200]],
+        price:['4.500 ₺ · tezgah üstü','22.900 ₺ · tezgah altı',4500,22900],
+        rows:[
+          ['Bizde var mı?','Yok. VitrA’daki "filtreli ara musluk" bir tortu (sediment) filtresidir; içme suyunu arıtan bir armatür değildir. Tüketicinin aradığı, musluğundan filtrelenmiş içme suyu veren batarya bu kategoriye girmiyor.'],
+          ['Rakipte kim var?','Franke marka olarak öne çıkıyor (Vital ve Atlas serileri; kapsül filtreli, ayrı arıtılmış su çıkışlı). Tezgah altı arıtmalı sistemler 3 yollu ve dokunmatik seçeneklerle satılıyor.'],
+        ],
+        ins:['Armatür yetkinliğine en yakın yeni hat','3 yollu veya tezgah altı arıtmalı armatür, Artema’nın mevcut yetkinliğine bitişik. Franke’nin kapsül filtre artı düzenli filtre değişimi modeli, tekrarlı (sarf) gelir kurmak için doğrudan örnek alınabilir.']},
+      {kicker:'Küme 4 · izle', title:'Sonradan takılan (retrofit) akıllı / bide klozet kapağı', st:['kismi','Komple var, retrofit yok'], color:'#F59E0B',
+        demand:[['akıllı klozet kapağı',600],['ısıtmalı klozet kapağı',200],['bide musluğu',150],['elektronik / taharetli kapak',40]],
+        price:['~15.000 ₺ · ithal','34.560 ₺ · marka uyumlu',15000,34560],
+        rows:[
+          ['Bizde var mı?','VitrA’da komple akıllı klozet (V-Care) var, fakat mevcut bir klozete sonradan takılan bağımsız akıllı kapak yok.'],
+          ['Rakipte kim var?','Universal (her klozete uyan) washlet’lerde TOTO ve Coway uzman ithalat kanalında. Kale’nin Smartx kapağı var ama yalnız kendi Dove 2.0 klozetiyle uyumlu, yani universal değil; bu da boşluğun açık kaldığını gösteriyor.'],
+        ],
+        ins:['Şimdilik izleme, uzun vadede opsiyon','Türkiye talebi henüz küçük olduğu için kısa vadeli öncelik değil. Ancak dünyada büyüyen bir kategori; uzun vadede V-Care teknolojisinin bağımsız, universal bir kapağa türevlenmesi düşünülebilir.']},
+    ];
+
+    const COVER_COLS = ['Yedek parça','Mutfak evyesi','Arıtmalı batarya','Akıllı kapak'];
+    const COVER = [
+      {d:'VitrA (biz)', self:true, c:['zayif','kismi','yok','kismi'], lab:['Zayıf','Kısmi','Yok','Kısmi']},
+      {d:'Koçtaş', c:['guclu','guclu','var','var']},
+      {d:'Franke', c:['na','guclu','guclu','na']},
+      {d:'Blanco / Teka', c:['na','guclu','na','na']},
+      {d:'Yerli akıllı evye markaları', c:['na','guclu','na','na']},
+      {d:'TOTO / Coway', c:['na','na','na','guclu']},
+      {d:'Kale', c:['na','na','na','var'], labOv:{3:'Marka-eşli'}},
+      {d:'Jenerik pazaryeri satıcıları', c:['guclu','var','na','na']},
+    ];
+
+    const COMPETITORS = [
+      {title:'Koçtaş', tag:['Geniş yapı market · ana rakip','info'], chips:[['Yedek parça','guclu'],['Evye','guclu'],['Arıtmalı','var'],['Kapak','var']],
+        paras:[[null,'Bu analizdeki neredeyse her kümede karşımıza çıkan ana rakip. Yedek parça, eviye, arıtmalı batarya ve havlupan başlıklarının hepsinde ayrı ve derin kategori sayfaları var. Bu sayfaları yalnız ürün listesi olarak değil; kısa rehber metinleri, montaj ve servis notları, taksit mesajlarıyla birlikte kuruyor. Mantığı "her parçayı tek çatı altında topla" şeklinde.']],
+        ins:'VitrA’nın bu başlıkların çoğunda tüketiciye dönük kategori sayfası yok; bu yüzden jenerik, satın alma niyeti yüksek aramalarda alan büyük ölçüde Koçtaş’ta kalıyor.'},
+      {title:'Kale', tag:['Vitrifiye üreticisi · çekirdek rakip','info'], chips:[['Akıllı kapak','var'],['Vitrifiye','guclu']],
+        paras:[[null,'VitrA’nın çekirdekteki en doğrudan rakibi. Akıllı klozet kapağı tarafında Smartx adlı bir ürünü var, fakat bu kapak yalnız kendi Dove 2.0 klozetiyle uyumlu; her klozete takılabilen universal bir ürün değil.']],
+        ins:'Kale de universal retrofit akıllı kapak boşluğunu doldurmuyor; o boşluk (Küme 4) hâlâ açık.'},
+      {title:'Franke', tag:['Evye ve arıtmalı batarya markası','info'], chips:[['Evye','guclu'],['Arıtmalı','guclu']],
+        paras:[[null,'İki kümede birden öne çıkıyor: evyede geniş granit ve çelik gamıyla, arıtmalı bataryada Vital ve Atlas serileriyle. Vital’de kapsül filtreli, ayrı arıtılmış su çıkışlı armatürler var ve filtre değişimi tüketiciye bırakılarak sürekli bir sarf ilişkisi kuruluyor.']],
+        ins:'Arıtmalı batarya segmentinde VitrA’nın hiç ürünü yok; Franke’nin kapsül filtre + sarf modeli VitrA için doğrudan örnek alınabilir.'},
+      {title:'Blanco ve Teka', tag:['Premium ve orta segment evye','info'], chips:[['Evye','guclu']],
+        paras:[[null,'Blanco granit evyede premium uçta; tescilli "Silgranit" malzemesini kalite vaadi olarak öne çıkarıyor. Teka hem granit hem çelikte daha geniş bir fiyat yelpazesine yayılıyor. Her ikisi de evye ile bataryayı set olarak sunuyor.']],
+        ins:'VitrA’nın granit/çelik evyesi olmadığı için bu segmentte yarışmıyor; oysa güçlü mutfak bataryası tam da bu set satışı modeline uygun.'},
+      {title:'Yerli akıllı evye markaları (Crauf, Schnelle, Mase Mode)', tag:['Kategoriyi kuran oyuncular','yok'], chips:[['Akıllı evye','guclu']],
+        paras:[[null,'Akıllı (workstation) evye kategorisini Türkiye’de büyük ölçüde bu yerli markalar kurmuş. Ürünleri şelale akış, çekilebilir batarya, entegre bıçaklık, doğrama tahtası ve çöp modülüyle, evyeyi basit bir lavabodan premium bir mutfak ürününe dönüştürüyor.']],
+        ins:'Bu segmentte VitrA’nın hiç ürünü yok ve kategori terimi henüz oturmadı; doğru isimlendirmeyle erken giren marka avantaj yakalar.'},
+      {title:'TOTO ve Coway', tag:['Universal washlet','info'], chips:[['Akıllı kapak','guclu']],
+        paras:[[null,'Sonradan takılan, her klozete uyan akıllı kapak (washlet) kategorisini dünyada yaratan oyuncular. Türkiye’de uzman ithalatçı kanalında, niş ve yüksek fiyatlı. "Washlet" kelimesi TOTO’nun marka adından jenerikleşmiş.']],
+        ins:'VitrA’nın komple V-Care’i var ama universal kapak kategorisinde ürünü yok. Talep küçük; global yön büyüme gösteriyor.'},
+      {title:'Grohe ve Hansgrohe', tag:['Uyarlanabilir model: parça bulucu','info'], chips:[['Model','var']],
+        paras:[[null,'Bir rakip olmaktan çok, yedek parça kümesi için izlenecek model. Her ikisinde de tüketiciye açık online yedek parça bulucu var: Hansgrohe’de interaktif patlatılmış çizim, parça numarası, montaj videosu ve PDF; Grohe’de üretimden kalkmış ürünleri de kapsayan parça bulma aracı.']],
+        ins:'Küme 1 için doğrudan uygulanabilir kurgu: orijinal parçayı SKU’laştır + benzer bir parça bulucu ekle.'},
+      {title:'Jenerik pazaryeri satıcıları', tag:['Yedek parçada hacmin sahibi','info'], chips:[['Yedek parça','var']],
+        paras:[[null,'Trendyol ve Hepsiburada’da yedek parça aramalarının büyük kısmını markasız veya küçük markalı (Biotech, Pi İthalat, Wuvera, Truva, maxibanyo, Venita) satıcılar karşılıyor. Tek tek küçük olsalar da toplamda kategorinin görünürlüğünü ve fiyat algısını onlar belirliyor.']],
+        ins:'Dağınık ve markasız bu alan, orijinal ve güvenilir bir VitrA-Artema ürünü için net bir farklılaşma fırsatı yaratıyor.'},
+    ];
+
+    const PAZAR = [
+      {title:'Küme 1 · Yedek ve sarf parça', head:['Aranan ürün','Listede ne çıkıyor','Satıcı yapısı','Fiyat'],
+        rows:[
+          ['Perlatör / musluk başlığı','Hepsiburada’da 600+ ürün; tamamına yakını jenerik','Biotech, Pi İthalat, Wuvera, Truva','60 - 190 ₺'],
+          ['Duşakabin tekerleği','Fiyat karşılaştırmada 400+ ürün; saf jenerik','maxibanyo, Venita ve isimsiz','24 - 250 ₺'],
+          ['Batarya kartuşu (jenerik)','Ölçüye göre (35 / 40 mm) mix kartuşlar','Markasız "aç-kapa kartuş"','190 - 200 ₺'],
+          ['Batarya kartuşu (orijinal)','Artema A25131YP gibi orijinal parçalar','Uzman bayi: yedekmarket.net, banyoevin.com','470 - 700 ₺'],
+        ],
+        ins:'Ana pazaryeri akışı jenerikle dolu. Orijinal Artema parçası var olsa da bağımsız uzman sitelere sıkışmış; Trendyol ve Hepsiburada ana aramalarında VitrA-Artema markalı tüketici ürünü neredeyse görünmüyor.'},
+      {title:'Küme 2 · Mutfak evyesi', head:['Segment','Listede ne çıkıyor','Baskın markalar','Fiyat'],
+        rows:[
+          ['Granit evye','Geniş granit ve kompozit gam','Teka, Franke, Blanco (Silgranit)','5.000 - 15.000 ₺'],
+          ['Akıllı / workstation evye','Aksesuarlı premium setler','Crauf, Schnelle, Mase Mode (yerli)','20.000 - 35.000 ₺'],
+          ['Paslanmaz çelik evye','304 çelik vurgulu geniş yelpaze','Franke, Teka ve jenerik','geniş aralık'],
+          ['VitrA evye (mevcut)','Arkitekt seramik tezgahüstü','VitrA','tezgahüstü'],
+        ],
+        ins:'VitrA mutfak bataryasında derin, evyede ise seramikle sınırlı. Talebin yüksek olduğu granit, çelik ve akıllı evyede pazaryerinde görünmüyor.'},
+      {title:'Küme 3 · Arıtmalı / içme suyu bataryası', head:['Ürün tipi','Listede ne çıkıyor','Baskın markalar','Fiyat'],
+        rows:[
+          ['Tezgah üstü arıtmalı batarya','Kapsül filtreli mutfak bataryaları','Franke (Vital, Atlas)','giriş ~4.500 ₺'],
+          ['Tezgah altı arıtmalı sistem','3 yollu, dokunmatik, gizli filtreli','Franke ve arıtma markaları','12.900 - 22.900 ₺'],
+          ['3 yollu batarya','Fiyat karşılaştırmada binlerce model','Çeşitli','değişken'],
+        ],
+        ins:'VitrA-Artema bu segmentte hiç yok. Mevcut "filtreli ara musluk" tortu filtresidir, bu aramaların karşılığı değildir.'},
+      {title:'Küme 4 · Akıllı / bide klozet kapağı', head:['Ürün tipi','Listede ne çıkıyor','Marka','Fiyat'],
+        rows:[
+          ['Universal washlet','İthal, uzman kanal (Amazon, akilliklozetkapaklari.com)','TOTO Washlet, Coway','yüksek, ithal'],
+          ['Marka uyumlu kapak','Yalnız kendi klozetiyle uyumlu','Kale Smartx','~34.560 ₺'],
+          ['Komple akıllı klozet (referans)','Tam set','VitrA V-Care, Kale, ROCA','komple set'],
+        ],
+        ins:'Universal kapak nişte ve ithal; marka uyumlu kapaklar pahalı ve kendi klozetine bağlı. Talep küçük, ancak boşluk açık.'},
+    ];
+
+    const GAP_THEMES = [
+      {t:'Yedek / sarf parça', vol:23000, ex:'musluk başlığı 11.000, perlatör 4.700', comp:'Koçtaş, jenerik satıcılar', st:['zayif','Tüketici SKU yok']},
+      {t:'Mutfak evyesi (granit/çelik/akıllı)', vol:15000, ex:'akıllı evye 6.800, granit evye 5.000', comp:'Franke, Blanco, Teka, yerli', st:['kismi','Sadece seramik']},
+      {t:'Arıtmalı batarya', vol:8000, ex:'arıtmalı musluk 5.500', comp:'Franke', st:['yok','Yok']},
+      {t:'Akıllı / bide klozet kapağı', vol:1000, ex:'akıllı klozet kapağı 600', comp:'TOTO, Coway, Kale', st:['yok','Universal yok']},
+    ];
+    const NAMING = [
+      ['Perlatör','musluk başlığı · aeratör · su tasarruf aparatı · musluk ucu · batarya ucu'],
+      ['Akıllı evye','workstation evye · iş istasyonu evye · dijital evye seti'],
+      ['Granit evye','silgranit evye · kompozit granit evye'],
+      ['Arıtmalı batarya','arıtmalı musluk · su arıtmalı batarya · içme suyu armatürü · 3 yollu batarya · filtreli batarya'],
+      ['Akıllı klozet kapağı','bide kapağı · taharet kapağı · washlet · elektronik / ısıtmalı klozet kapağı'],
+      ['Batarya kartuşu','mix kartuş · aç-kapa kartuş · 35 / 40 mm kartuş · ayaklı / ayaksız · tırnaklı kartuş'],
+    ];
+
+    const subTabs = [['ozet','Özet & Fırsatlar'],['rakip','Rakip Analizi'],['pazar','Pazaryeri Sonuçları'],['gap','Content Gap']];
+
+    // ---------- PANELLER ----------
+    const ozetPanel = h('div', null,
+      P(null, 'VitrA; klozet, lavabo, rezervuar gibi çekirdek vitrifiye ürünlerinde ve Artema armatürlerinde Türkiye organik aramasında güçlü (genellikle ilk üç sırada). Bu çalışma güçlü olduğumuz alanları değil, talebin yüksek olduğu ama VitrA’nın ya hiç ürünü olmadığı ya da yanlış segmentte zayıf kaldığı dört alanı ele alıyor. Dört kümenin tamamında talep var, rekabet zorluğu düşük ve alanı bugün rakipler tutuyor.'),
+      h(Explainer, {emoji:'🧭', title:'Bu analiz nasıl hazırlandı?', sub:'İzlenen yöntem ve veri kaynakları', defaultOpen:false},
+        h('ol',{style:{margin:'4px 0', paddingLeft:20, color:'var(--ink-2)', fontSize:13.5, lineHeight:1.7}},
+          h('li',null,'Ahrefs content gap analizi ile Koçtaş, Kale, Bauhaus, BanyoMarka, Creavit, BanyoLine ve BanyoMega’nın ilk 10’da yer aldığı, VitrA’nın ise ilk 10’da bulunmadığı kelimeler listelendi. Banyo ve bitişik kategorilerle ilgisiz aramalar ayıklanarak 4.202 kelimelik bir fırsat evreni oluşturuldu.'),
+          h('li',null,'Bu kelimelerin her biri VitrA’nın kendi kategori ve ürün sayfalarıyla karşılaştırılarak ilgili ürünün katalogda olup olmadığı, varsa ne kadar derinlikte sunulduğu belirlendi.'),
+          h('li',null,'Ahrefs Keywords Explorer ile her kelimenin Türkiye’deki aylık arama hacmi, rekabet zorluğu ve tıklama başı reklam maliyeti ölçülerek fırsatlar büyüklük ve ticari değere göre sıralandı.'),
+          h('li',null,'Trendyol, Hepsiburada, Koçtaş ve fiyat karşılaştırma siteleri incelenerek her üründe kimin sattığı, hangi fiyat aralığında ve nasıl konumlandığı çıkarıldı.'),
+          h('li',null,'Rakiplerin bu kelimelerden yakaladığı organik trafik ve bu trafiği getiren ürün sayfaları tespit edilerek alanın bugün hangi markanın elinde olduğu ortaya konuldu.'),
+          h('li',null,'Son adımda, ürünü zaten var olan ve yalnızca arama sıralamasının güçlendirilmesi gereken başlıklar listeden çıkarıldı; böylece geriye yalnızca gerçek ürün ve katalog fırsatları kaldı.')
+        )
+      ),
+      h('div',{style:{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:12, margin:'18px 0'}},
+        KPIS.map((k,i)=>h('div',{key:i}, h(Kpi,{label:k.lab, value:k.vol, sub:'arama / ay', chip:k.rank, chipClass:'neu', accent:true})))
+      ),
+      h('div',{className:'card'},
+        h('div',{style:{fontSize:13, fontWeight:700, color:'var(--ink)', marginBottom:4}}, 'Fırsatların talep büyüklüğü (aylık arama hacmi)'),
+        h('div',{style:{fontSize:12.5, color:'var(--ink-3)', marginBottom:14}}, 'Kümelerin toplam talebi karşılaştırmalı. Yedek parça ve evye, hacmin büyük kısmını taşıyor.'),
+        h(ShareBars, {rows: CLUSTER_DEMAND})
+      ),
+      SH(ICO.bolt, 'Dört fırsat kümesi, ayrıntılı', 'Her küme için: ne aranıyor, bizde var mı, rakipte kim var ve önerilen hamle.'),
+      CLUSTERS.map((c,i)=>h('div',{key:i, className:'card', style:{marginBottom:18, borderTop:'3px solid '+c.color}},
+        h('div',{style:{fontSize:11.5, fontWeight:700, letterSpacing:'.06em', textTransform:'uppercase', color:c.color, marginBottom:5}}, c.kicker),
+        h('div',{style:{fontSize:17, fontWeight:700, color:'var(--ink)', marginBottom:6}}, c.title, stTitle(c.st[0], c.st[1])),
+        h('div',{style:{display:'grid', gridTemplateColumns:'minmax(240px,1fr) 1.3fr', gap:22, alignItems:'start', marginTop:10}},
+          h('div',null,
+            h('div',{style:{fontSize:12, fontWeight:700, color:'var(--ink-3)', textTransform:'uppercase', letterSpacing:'.04em', marginBottom:8}}, 'Ne aranıyor?'),
+            demandBars(c.demand, c.color),
+            h('div',{style:{fontSize:12, fontWeight:700, color:'var(--ink-3)', textTransform:'uppercase', letterSpacing:'.04em', margin:'16px 0 2px'}}, 'Pazaryeri fiyat aralığı'),
+            priceBand(c.price[0], c.price[1], c.price[2], c.price[3], c.color)
+          ),
+          h('div',null, c.rows.map((r,ri)=>P(r[0], r[1], ri)))
+        ),
+        insight(c.ins[0], c.ins[1])
+      )),
+      note(h('span',null, h('strong',{style:{color:'var(--ink)'}},'Listeden çıkarılan küme — Elektrikli havlupan: '),
+        'İlk taramada aday gibi görünmüştü, fakat doğrulamada VitrA’nın elektrikli havlupanının zaten var olduğu görüldü (örn. VitrA A4478636 Voyage Havlupan Elektrikli). Ürün mevcut olduğu için bu bir ürün boşluğu değil, yalnız pazaryeri/sıralama görünürlüğü meselesidir ve kapsam dışı bırakıldı.'), true)
+    );
+
+    const rakipPanel = h('div', null,
+      P(null, 'Kümelerde alanı kim tutuyor? Aşağıdaki matris, her oyuncunun hangi kümede ne kadar güçlü olduğunu ve VitrA’nın nerede boşlukta olduğunu bir bakışta gösteriyor. Altında her rakibin ne sattığı, nasıl konumlandığı ve bizde karşılığı ayrıntılı.'),
+      SH(ICO.grid, 'Rakip × küme kapsama matrisi', 'Yeşil = güçlü/var, kırmızı = yok, mor = kısmi/zayıf. VitrA satırı vurgulu.'),
+      h('div',{className:'card flush', style:{marginTop:12}},
+        h('div',{className:'tbl-wrap', style:{maxHeight:'none'}},
+          h('table',{className:'tbl'},
+            h('thead',null, h('tr',null,
+              h('th',null,'Oyuncu'),
+              COVER_COLS.map((c,i)=>h('th',{key:i, style:{textAlign:'center'}}, c)))),
+            h('tbody',null, COVER.map((r,ri)=>h('tr',{key:ri, style: r.self?{background:'var(--accent-wash)'}:null},
+              h('td',{style:{fontWeight:r.self?800:600, color:'var(--ink)'}}, r.d),
+              r.c.map((st,ci)=>h('td',{key:ci, style:{textAlign:'center'}},
+                st==='na' ? h('span',{style:{color:'var(--ink-3)'}},'—')
+                          : pill(st, (r.labOv&&r.labOv[ci])||(r.lab&&r.lab[ci])||null)))
+            )))
+          )
+        )
+      ),
+      SH(null, 'Rakip profilleri'),
+      COMPETITORS.map((c,i)=>h('div',{key:i, className:'card', style:{marginBottom:14}},
+        h('div',{style:{fontSize:16.5, fontWeight:700, color:'var(--ink)'}}, c.title, stTitle(c.tag[1], c.tag[0])),
+        h('div',{style:{display:'flex', flexWrap:'wrap', gap:6, margin:'8px 0 2px'}},
+          c.chips.map((ch,ci)=>h('span',{key:ci, className:'pill', style:{background:stMap[ch[1]].bg, color:stMap[ch[1]].c, fontWeight:600}}, ch[0]+' · '+stMap[ch[1]].t))),
+        c.paras.map((p,pi)=>P(p[0], p[1], pi)),
+        insight('VitrA’ya göre durum', c.ins)
+      ))
+    );
+
+    const pazarPanel = h('div', null,
+      P(null, 'Her küme için pazaryeri aramalarında fiilen ne çıktığı: hangi terimle ne tür ürün listeleniyor, kim satıyor, fiyat bandı ne ve VitrA-Artema o akışta görünüyor mu. Fiyatlar 2026-06-04 anlık görüntüsüdür.'),
+      PAZAR.map((t,i)=>h('div',{key:i, style:{marginTop: i?26:10}},
+        h('div',{style:{fontSize:15.5, fontWeight:700, color:'var(--ink)'}}, t.title),
+        dataTable(t.head, t.rows),
+        insight('Gözlem', t.ins)
+      ))
+    );
+
+    const gapPanel = h('div', null,
+      P(null, 'Content gap, rakiplerin arama sonuçlarında öne çıktığı ama VitrA’nın ilk 10’da yer almadığı aramaları gösterir. Ahrefs content gap analiziyle VitrA ile yedi rakibin (Koçtaş, Kale, Bauhaus, Creavit, BanyoMarka, BanyoLine, BanyoMega) aynı arama evrenindeki konumları karşılaştırıldı; rakiplerin ilk 10’da olup VitrA’nın bulunmadığı kelimeler bir araya getirildi.'),
+      h('div',{style:{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:14, margin:'16px 0'}},
+        h('div',{className:'card'}, h('div',{style:{fontSize:30, fontWeight:800, color:'var(--ink)', fontFamily:"'Bricolage Grotesque'"}}, '4.202'),
+          h('div',{style:{fontSize:13, color:'var(--ink-2)', marginTop:2}}, 'temizlenmiş, ilgili anahtar kelime')),
+        h('div',{className:'card'}, h('div',{style:{fontSize:30, fontWeight:800, color:'var(--ink)', fontFamily:"'Bricolage Grotesque'"}}, '1.226.610'),
+          h('div',{style:{fontSize:13, color:'var(--ink-2)', marginTop:2}}, 'toplam aylık arama hacmi')),
+        h('div',{className:'card'}, h('div',{style:{fontSize:30, fontWeight:800, color:'var(--accent-deep)', fontFamily:"'Bricolage Grotesque'"}}, '%7,5'),
+          h('div',{style:{fontSize:13, color:'var(--ink-2)', margin:'2px 0 8px'}}, 'VitrA’nın göründüğü pay (317 kelime)'),
+          h('div',{style:{height:8, borderRadius:4, background:'var(--line)', overflow:'hidden'}}, h('div',{style:{width:'7.5%', height:'100%', background:'var(--accent)'}})))
+      ),
+      insight('Bu %7,5 zayıflık değil, bilinçli odak', 'VitrA çekirdek vitrifiye ve armatürde güçlü. Bu çalışma bilerek VitrA’nın görünmediği açık alana odaklandığı için bu kesitte pay düşük görünüyor. Asıl değer, bu açık alanın içinden gerçek ürün fırsatlarını ayıklamakta.'),
+      SH(ICO.gap, 'Açık alanda öne çıkan aday temalar', 'Talebe göre sıralı; her temada güçlü rakip ve VitrA’nın durumu.'),
+      h('div',{className:'card flush', style:{marginTop:12}},
+        h('div',{className:'tbl-wrap', style:{maxHeight:'none'}},
+          h('table',{className:'tbl'},
+            h('thead',null, h('tr',null,
+              h('th',null,'Tema'), h('th',null,'Aylık talep'), h('th',null,'Örnek aramalar'), h('th',null,'Güçlü rakip'), h('th',null,'VitrA durumu'))),
+            h('tbody',null, GAP_THEMES.map((g,gi)=>{ const mx=23000; return h('tr',{key:gi},
+              h('td',{style:{fontWeight:600, color:'var(--ink)'}}, g.t),
+              h('td',{style:{minWidth:130}},
+                h('div',{style:{fontSize:12, fontWeight:700, color:'var(--ink)', marginBottom:3}}, '~'+fmtFull(g.vol)),
+                h('div',{style:{height:6, borderRadius:3, background:'var(--line)', overflow:'hidden'}}, h('div',{style:{width:(g.vol/mx*100)+'%', height:'100%', background:ACC}}))),
+              h('td',{style:{fontSize:12.5, color:'var(--ink-2)'}}, g.ex),
+              h('td',{style:{fontSize:12.5, color:'var(--ink-2)'}}, g.comp),
+              h('td',null, pill(g.st[0], g.st[1])))
+            }))
+          )
+        )
+      ),
+      SH(null, 'Aynı ürün, farklı isim', 'Tüketiciler aynı ürünü 4-5 farklı adla arıyor. Kategori adı ve filtrelerde bu varyasyonları kapsamak görünürlüğü artırır.'),
+      dataTable(['Standart ad','Pazaryerinde görülen alternatifler'], NAMING),
+      note(h('span',null, h('strong',{style:{color:'var(--ink)'}},'Elenen başlıklar: '),
+        'İlk listede yer alıp sonradan ayıklananlar: havlupan (ürün var), gömme rezervuar iç takımı (VitrA üretiyor), klozet kapağı ve duşakabin gibi VitrA’nın zaten sattığı ürünler. Bunlarda sorun ürünün yokluğu değil mevcut sayfaların sıralamasıydı; ayrı bir SEO çalışmasına bırakıldılar.')),
+
+      // ---------- Rakip trafik derinleştirmesi ----------
+      RGcomp.length>0 && SH(ICO.cart, 'Rakip trafiği: kim, ne kadar gap trafiği yakalıyor?', 'Banyo + bitişik evrende (4.202 kelime) rakiplerin yakaladığı aylık tahmini organik trafik. "Saf boşluk" = VitrA o kelimede hiç yokken rakibin aldığı trafik.'),
+      RGcomp.length>0 && h('div',{style:{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))', gap:12, margin:'14px 0'}},
+        h('div',null, h(Kpi,{label:'Rakiplerin yakaladığı toplam trafik', value:fmtTr(gapTotalTraf), sub:'aylık tahmini · ilgili evren', accent:true})),
+        h('div',null, h(Kpi,{label:'Bunun saf boşluk kısmı', value:fmtTr(gapTotalGap), sub:'VitrA hiç yok · toplamın ~%'+Math.round(gapTotalGap/gapTotalTraf*100)})),
+        h('div',null, h(Kpi,{label:RGcomp[0].label+' tek başına', value:fmtTr(RGcomp[0].traffic), sub:'toplam rakip trafiğinin ~%'+Math.round(RGcomp[0].traffic/gapTotalTraf*100)}))
+      ),
+      RGcomp.length>0 && h('div',{className:'card'},
+        h('div',{style:{fontSize:13, fontWeight:700, color:'var(--ink)', marginBottom:4}}, 'Rakip trafik liderliği'),
+        h('div',{style:{fontSize:12.5, color:'var(--ink-3)', marginBottom:14}}, 'Her rakibin ilgili evrende yakaladığı toplam organik trafik (aylık tahmini).'),
+        h(ShareBars, {rows: RGcomp.map((c,i)=>({label:c.label, value:c.traffic, color:compColors[i%compColors.length]}))})
+      ),
+      RGcomp.length>0 && insight('Tek bir rakip alanı domine ediyor', sc ? (RGcomp[0].label+' ilgili evrende rakip trafiğinin yaklaşık %'+Math.round(RGcomp[0].traffic/gapTotalTraf*100)+'’ini tek başına topluyor ve bunun büyük kısmı VitrA’nın hiç görünmediği kelimelerden geliyor. Aşağıdan bir rakip seçip hangi kelimenin, hangi üründen ne kadar trafik getirdiğini inceleyebilirsiniz.') : ''),
+
+      // rakip seçici
+      RGcomp.length>0 && SH(null, 'Rakip detayı', 'Bir rakip seçin: en çok trafik getiren kelimeleri ve ürün sayfalarını görün.'),
+      RGcomp.length>0 && h('div',{style:{display:'flex', flexWrap:'wrap', gap:8, margin:'4px 0 16px'}},
+        RGcomp.map((c,i)=>h('button',{key:c.dom, onClick:()=>setGapComp(c.dom),
+          style:{appearance:'none', cursor:'pointer', fontFamily:'inherit', fontSize:13, fontWeight:600,
+            padding:'7px 13px', borderRadius:20, border:'1px solid '+(gapComp===c.dom?'var(--accent)':'var(--line)'),
+            background: gapComp===c.dom?'var(--accent)':'var(--bg-card)', color: gapComp===c.dom?'#fff':'var(--ink-2)'}},
+          c.label, h('span',{style:{marginLeft:7, opacity:.85, fontWeight:700}}, fmtTr(c.traffic))))
+      ),
+      sc && h('div', null,
+        h('div',{style:{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12, marginBottom:16}},
+          h('div',null, h(Kpi,{label:sc.label+' · toplam trafik', value:fmtTr(sc.traffic), sub:sc.type, accent:true})),
+          h('div',null, h(Kpi,{label:'Sıralandığı kelime', value:fmtFull(sc.kw)})),
+          h('div',null, h(Kpi,{label:'Saf boşluk trafiği', value:fmtTr(sc.gapTraffic), sub:fmtFull(sc.gapKw)+' kelime · VitrA yok'}))
+        ),
+        h('div',{className:'card', style:{marginBottom:16}},
+          h('div',{style:{fontSize:13, fontWeight:700, color:'var(--ink)', marginBottom:4}}, sc.label+' trafiğinin tema dağılımı'),
+          h('div',{style:{fontSize:12.5, color:'var(--ink-3)', marginBottom:12}}, 'Hangi ürün kategorisi ne kadar trafik getiriyor (ilk 8 tema).'),
+          h(ShareBars, {rows: sc.themeBreakdown.slice(0,8).map((t,i)=>({label:t.theme, value:t.tr, color:compColors[i%compColors.length]}))})
+        ),
+        h('div',{style:{fontSize:15, fontWeight:700, color:'var(--ink)', margin:'18px 0 2px'}}, 'En çok trafik getiren kelimeler — '+sc.label),
+        h('div',{style:{fontSize:12.5, color:'var(--ink-3)', marginBottom:8}}, 'İlk 40 kelime, trafiğe göre. Başlığa tıklayarak sıralayın. "Ürün" = rakibin o kelimede sıralanan sayfası (yeni sekmede açılır).'),
+        h('div',{className:'card flush'},
+          h('div',{className:'tbl-wrap', style:{maxHeight:520}},
+            h('table',{className:'tbl'},
+              h('thead',null, h('tr',null,
+                h('th',null,'Kelime'),
+                h('th',null,'Tema'),
+                h('th',{className:'num', style:{cursor:'pointer'}, onClick:()=>setGapSort('vol')}, 'Hacim'+(gapSort==='vol'?' ↓':'')),
+                h('th',{className:'num', style:{cursor:'pointer'}, onClick:()=>setGapSort('pos')}, 'Sıra'+(gapSort==='pos'?' ↑':'')),
+                h('th',{className:'num', style:{cursor:'pointer'}, onClick:()=>setGapSort('tr')}, 'Trafik'+(gapSort==='tr'?' ↓':'')),
+                h('th',null,'Ürün (sayfa)'),
+                h('th',null,'VitrA')
+              )),
+              h('tbody',null, scKwRows.map((r,i)=>h('tr',{key:i},
+                h('td',{className:'kw-cell'}, r.kw),
+                h('td',{style:{fontSize:11.5, color:'var(--ink-2)'}}, r.theme),
+                h('td',{className:'num'}, fmtFull(r.vol)),
+                h('td',{className:'num'}, '#'+r.pos),
+                h('td',{className:'num', style:{fontWeight:700}}, fmtFull(r.tr)),
+                h('td',null, urlLink(r.url)),
+                h('td',null, r.vpos==null ? pill('yok','yok') : h('span',{className:'pill', style:{background:'var(--line-soft)', color:'var(--ink-2)', fontWeight:700}}, '#'+r.vpos))
+              )))
+            )
+          )
+        ),
+        h('div',{style:{fontSize:15, fontWeight:700, color:'var(--ink)', margin:'22px 0 2px'}}, 'En çok trafik toplayan ürün/sayfalar — '+sc.label),
+        h('div',{style:{fontSize:12.5, color:'var(--ink-3)', marginBottom:8}}, 'Tek tek kelimeler değil; sayfa bazında toplam trafik ve o sayfaya gelen kelime sayısı. "Hangi üründen" sorusunun cevabı.'),
+        dataTable(['Sayfa (URL)','Trafik','Kelime sayısı'], sc.topPages.map(p=>[urlLink(p.url), fmtFull(p.tr), fmtFull(p.kw)]))
+      )
+    );
+
+    const panels = {ozet:ozetPanel, rakip:rakipPanel, pazar:pazarPanel, gap:gapPanel};
+
+    return h('div', null,
+      h('div',{style:{marginBottom:6}},
+        h('div',{style:{fontSize:23, fontWeight:800, color:'var(--ink)'}}, 'Rakip Analizi & Ürün Fırsatları'),
+        h('div',{style:{fontSize:13.5, color:'var(--ink-3)', marginTop:4, maxWidth:900, lineHeight:1.55}},
+          'VitrA’nın sıralamadığı ve kataloğunda olmayan veya zayıf olduğu ürün gruplarını; bu ürünleri kimin sattığını, nasıl konumlandığını ve bizde karşılığı olup olmadığını inceleyen çalışma. "Ürün zaten var, yalnız sıralaması zayıf" başlıklar ayıklanmıştır (onlar ayrı bir SEO çalışmasının konusu).'),
+        h('div',{style:{fontSize:11.5, color:'var(--ink-3)', marginTop:8}},
+          'Veri tarihi: 2026-06-04 · Arama hacmi/zorluk: Ahrefs (Türkiye) · Fiyat/marka: Trendyol, Hepsiburada, Koçtaş ve fiyat karşılaştırma siteleri anlık görüntüsü.')
+      ),
+      h('div',{style:{display:'flex', flexWrap:'wrap', gap:4, margin:'18px 0 24px', borderBottom:'2px solid var(--line)'}},
+        subTabs.map(([id,label])=>h('button',{key:id, onClick:()=>setSub(id),
+          style:{appearance:'none', border:'none', background:'none', cursor:'pointer', fontSize:14, fontWeight:600, fontFamily:'inherit',
+            color: sub===id?'var(--accent)':'var(--ink-3)', padding:'10px 15px',
+            borderBottom:'3px solid '+(sub===id?'var(--accent)':'transparent'), marginBottom:-2}}, label))
+      ),
+      panels[sub]
+    );
+  }
+
   window.TABS = window.TABS || {};
   window.TABS.FirsatTab = FirsatTab;
+  window.TABS.RakipTab = RakipTab;
 })();

@@ -1,6 +1,6 @@
 // Main App
 (function(){
-  const { OzetTab, KategorilerTab, KeywordTab, TrendlerTab, FiyatTab, FirsatTab, KeywordModal } = window.TABS;
+  const { OzetTab, KategorilerTab, KeywordTab, TrendlerTab, FiyatTab, FirsatTab, RakipTab, KeywordModal } = window.TABS;
   const h = React.createElement;
 
   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -152,6 +152,7 @@
       { id:'trendler', label:'Trendler', badge:null },
       { id:'fiyat', label:'Fiyat Intent', badge:null },
       { id:'firsat', label:'Banyo Mob. Fırsat Analizi', badge:null },
+      { id:'rakip', label:'Rakip Analizi', badge:null },
     ];
 
     const activeTab = tab;
@@ -168,6 +169,7 @@
         case 'trendler': return h(TrendlerTab, {setKeywordModal, onNavigateKw, globalFilter});
         case 'fiyat': return h(FiyatTab, {setKeywordModal, globalFilter});
         case 'firsat': return h(FirsatTab, {});
+        case 'rakip': return h(RakipTab, {});
       }
     }
 
@@ -227,7 +229,7 @@
       ),
 
       // Global category filter - sticky under tabs (Fırsat sekmesinde gizli: kendi Kat2/Kat3 filtresi var, Kat1 gereksiz)
-      tab !== 'firsat' && h('div',{className:'global-filter-wrap'+(filterScrolled?' scrolled':'')+(filterHidden?' hidden':'')},
+      tab !== 'firsat' && tab !== 'rakip' && h('div',{className:'global-filter-wrap'+(filterScrolled?' scrolled':'')+(filterHidden?' hidden':'')},
         h('div',{className:'filter-panel'},
           h('div',{className:'filter-panel-label'},
             h('span',{className:'fp-icon'},
